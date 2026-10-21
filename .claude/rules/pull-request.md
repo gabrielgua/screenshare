@@ -49,15 +49,30 @@ Short description of what this pull request does.
 - **Screenshots never go to the remote repository.** No screenshot branches and no committed images.
   Save them locally in the gitignored `.pr-screenshots/<branch-name>/` folder, named
   `before-desktop.png`, `after-desktop.png`, `before-mobile.png`, `after-mobile.png`.
-- After opening the pull request, give the user the full local paths of the screenshots. The user
-  drags them into the pull request description on GitHub, which hosts them. Use this table layout:
+- **Claude uploads the screenshots itself with `gh pr create --attach` or `gh pr edit --attach`.**
+  GitHub hosts the uploaded files, so nothing is pushed to the repository. This needs GitHub CLI
+  2.102.1 or newer. Update it with `winget upgrade --id GitHub.cli` if `--attach` is missing.
+- Write the body with image references pointing at the local files, run the command from the
+  repository root, and pass one `--attach` per file. The CLI rewrites each local reference to the
+  uploaded asset.
 
 ```markdown
 | | Before | After |
 | --- | --- | --- |
-| Desktop | before-desktop.png | after-desktop.png |
-| Mobile | before-mobile.png | after-mobile.png |
+| Desktop | ![Before desktop](./.pr-screenshots/<branch>/before-desktop.png) | ![After desktop](./.pr-screenshots/<branch>/after-desktop.png) |
+| Mobile | ![Before mobile](./.pr-screenshots/<branch>/before-mobile.png) | ![After mobile](./.pr-screenshots/<branch>/after-mobile.png) |
 ```
+
+```sh
+gh pr create --base homolog --title "..." --label frontend --body-file body.md \
+  --attach ./.pr-screenshots/<branch>/before-desktop.png \
+  --attach ./.pr-screenshots/<branch>/after-desktop.png \
+  --attach ./.pr-screenshots/<branch>/before-mobile.png \
+  --attach ./.pr-screenshots/<branch>/after-mobile.png
+```
+
+- If an upload fails, the command exits with a non-zero status but still prints the pull request
+  link. Check the body on GitHub and re-run `gh pr edit --attach` for the missing files.
 
 ## 6. Labels
 
