@@ -44,9 +44,11 @@ Mobile browsers cannot capture the screen, so phones can watch streams but not s
 ### Delivery plan
 
 1. **Design system** (done): theme tokens, typography, buttons, inputs, icons, dark mode.
-2. **Supabase project and Discord sign in** (current).
-3. **Rooms and presence** with Supabase Realtime.
-4. **Screen sharing** with `getDisplayMedia` and WebRTC.
+2. **Supabase project and Discord sign in** (done).
+3. **Account approval** (current): admins approve or deny every new user.
+4. **Approval emails**: email users when their account is approved. Not built yet.
+5. **Rooms and presence** with Supabase Realtime.
+6. **Screen sharing** with `getDisplayMedia` and WebRTC.
 
 ## Commands
 
@@ -76,22 +78,31 @@ src/
   components/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton)
     form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea
-    icon/                  BaseIcon, BaseSpinner
+    icon/                  BaseIcon, BaseSpinner, BaseIconCircle
     surface/               BaseCard
     typography/            BaseText (owns every text class), BaseHeading (renders BaseText)
     avatar/                BaseAvatar (image with an initials fallback)
+    badge/                 BaseBadge (small count pill)
+    dialog/                BaseDialog (native <dialog> with title, body and actions)
+    illustration/          Inline SVG illustrations themed with fill and stroke classes
     authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar
+    account-status/        AccountStatusNotice and the pending, denied and load error notices
+    user-approvals/        Admin approvals: list, card, review dialog, header link
     home/                  SignedOutHero, SignedInWelcome
-    layout/                AppHeader, AppBrandMark, PageContainer
+    layout/                AppHeader, AppBrandMark, PageContainer, PageLoadingSpinner
     theme/                 ColorSchemeToggle
   composables/             use-*.ts shared reactive logic
                            use-color-scheme.ts, use-form-field-accessibility.ts
-  services/                supabase-client.ts, the single Supabase client instance
-  stores/                  *-store.ts Pinia stores, authentication-store.ts owns the session
+  services/                supabase-client.ts and *-service.ts files that talk to Supabase
+  stores/                  *-store.ts Pinia stores
+                           authentication-store.ts owns the session
+                           current-user-store.ts owns the signed in user's role and approval
+                           pending-users-store.ts owns the admin's pending list
+  views/                   Route views that only compose components
+  router/                  Vue Router setup and the admin route guard
 supabase/
   config.toml              Supabase project settings, pushed with the CLI
-  views/                   Route views that only compose components
-  router/                  Vue Router setup
+  migrations/              SQL migrations, applied with pnpm supabase db push
 ```
 
 ## Supabase
@@ -116,6 +127,39 @@ The backend is the Supabase project `screenshare`, reference `xergqwhbwljvbvijbo
   `https://xergqwhbwljvbvijbold.supabase.co/auth/v1/callback` as an OAuth2 redirect.
 - **Redirects:** sign in returns to the app origin, which must be in `site_url` or
   `additional_redirect_urls`. Add the production address there once the app is deployed.
+- **Migrations:** create them with `pnpm supabase migration new <descriptive_name>`, write plain
+  SQL without comments, preview with `pnpm supabase db push --linked --dry-run`, then apply with
+  `pnpm supabase db push --linked`. No database password is needed. Never edit a migration that
+  was already pushed: add a new one.
+- **Ad hoc SQL:** `pnpm supabase db query --linked "<sql>"` runs SQL through the Management API.
+- **Advisors:** run `pnpm supabase db advisors --linked` after every migration and fix new warnings.
+
+## Account approval
+
+Every user who signs in with Discord must be approved by an admin before using the platform.
+
+- **Table:** `public.users` holds one row per `auth.users` row: display name, avatar, email,
+  `role` (`member` or `admin`) and `approval_status` (`pending`, `approved` or `denied`), plus the
+  review reason, reviewer and review time.
+- **Sign up:** the `create_user_after_sign_up` trigger on `auth.users` inserts a `pending` row.
+- **Reading:** row level security lets users read only their own row. Admins read every row.
+  Nobody can insert, update or delete rows from the API.
+- **Reviewing:** admins call `public.review_user(target_user_id, decision, reason)`. It checks that
+  the caller is an approved admin, refuses self reviews, and stores the optional reason.
+- **Helpers:** `private.is_admin()` and `private.is_approved_user()` live in the `private`
+  schema, which the API does not expose. Use `private.is_approved_user()` in row level security
+  policies of future tables so only approved users can use them.
+- **Making someone an admin:** there is no UI for this on purpose. Run:
+
+  ```sh
+  pnpm supabase db query --linked "update public.users set role = 'admin', approval_status = 'approved' where id = '<user id>'"
+  ```
+
+- **Frontend:** pending users see `PendingApprovalNotice`, denied users see `AccessDeniedNotice`
+  with the reason, and admins get the `/approvals` page, guarded in `router/index.ts`. Pending
+  users recheck their status whenever the window regains focus.
+- **Emails:** the pending screen promises an email when the account is ready, but sending it is
+  not built yet. It needs an email provider and is the next step of the delivery plan.
 
 ## Design system
 
