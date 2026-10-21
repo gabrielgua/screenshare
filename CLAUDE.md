@@ -148,6 +148,13 @@ Typography:
 Follow [`.claude/rules/pull-request.md`](.claude/rules/pull-request.md) for every pull request:
 English only, a short description, labels, and before and after screenshots for frontend changes.
 
+- **Every pull request targets `homolog`.** Branch from `homolog`, open with
+  `gh pr create --base homolog`.
+- **`main` is protected.** No direct pushes, admins included. It only changes through a pull
+  request from `homolog`.
+- **Screenshots stay local** in the gitignored `.pr-screenshots/<branch-name>/` folder. Never push
+  them to the remote. The user drags them into the pull request on GitHub.
+
 ### Adding an icon
 
 Import it from `@hugeicons/core-free-icons` inside `src/theme/app-icons.ts` and export it under a
@@ -157,6 +164,7 @@ from `app-icons.ts`.
 ## Workflow rules
 
 - **Never commit, push or open pull requests without explicit approval from the user.**
+- **Never commit to `main` or `homolog` directly.** Work on a feature branch from `homolog`.
 - Keep each pull request focused on one step of the delivery plan.
 - Supabase: the user installs the CLI and creates the account. Claude then creates and configures
   the project through the CLI.
