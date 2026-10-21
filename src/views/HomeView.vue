@@ -1,33 +1,30 @@
 <script setup lang="ts">
-import Icon from '@/components/Icon.vue'
-import { useAppStore } from '@/stores/app-store'
-import { ComputerScreenShareIcon } from '@hugeicons/core-free-icons'
-import { useDateFormat, useNow } from '@vueuse/core'
-
-const appStore = useAppStore()
-const time = useDateFormat(useNow(), 'HH:mm:ss')
+import BaseButton from '@/components/button/BaseButton.vue'
+import BaseHeading from '@/components/typography/BaseHeading.vue'
+import BaseText from '@/components/typography/BaseText.vue'
+import AppHeader from '@/components/layout/AppHeader.vue'
+import PageContainer from '@/components/layout/PageContainer.vue'
+import { DiscordIcon } from '@/theme/app-icons'
 </script>
 
 <template>
-  <main class="grid min-h-dvh place-items-center p-6">
-    <div class="flex flex-col items-center gap-4 text-center">
-      <div class="icon-badge">
-        <Icon :icon="ComputerScreenShareIcon" :size="32" />
+  <div class="flex min-h-dvh flex-col">
+    <AppHeader />
+    <PageContainer class="flex-1 justify-center">
+      <div class="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
+        <BaseHeading :level="1">Share your screen with your Discord friends</BaseHeading>
+        <BaseText size="lg" tone="muted">
+          Go live from your browser and watch from any device, phone included.
+        </BaseText>
+        <div class="flex w-full flex-col pt-2 sm:w-auto">
+          <BaseButton size="lg" :leading-icon="DiscordIcon" is-disabled>
+            Sign in with Discord
+          </BaseButton>
+        </div>
+        <BaseText size="sm" tone="subtle">
+          Discord sign in arrives with the Supabase setup.
+        </BaseText>
       </div>
-      <h1 class="text-5xl font-extrabold tracking-tight sm:text-6xl">{{ appStore.greeting }}</h1>
-      <p class="text-slate-500">screenshare · {{ time }}</p>
-    </div>
-  </main>
+    </PageContainer>
+  </div>
 </template>
-
-<style scoped>
-.icon-badge {
-  display: grid;
-  place-items: center;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 1rem;
-  color: var(--color-accent);
-  background-color: color-mix(in oklab, var(--color-accent) 12%, white);
-}
-</style>
