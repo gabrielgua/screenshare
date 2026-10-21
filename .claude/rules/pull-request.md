@@ -29,10 +29,13 @@ Short description of what this pull request does.
 - Main change one
 - Main change two
 
-| Before | After |
-| --- | --- |
-| ![Before](<before image url>) | ![After](<after image url>) |
+| | Before | After |
+| --- | --- | --- |
+| Desktop | ![Before desktop](<url>/before-desktop.png) | ![After desktop](<url>/after-desktop.png) |
+| Mobile | ![Before mobile](<url>/before-mobile.png) | ![After mobile](<url>/after-mobile.png) |
 ```
+
+Drop the mobile row when the change looks the same on phones.
 
 For changes without visible frontend changes, the body is only the description and bullets.
 
