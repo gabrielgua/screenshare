@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import SignedInUserMenu from '@/components/authentication/SignedInUserMenu.vue'
 import ColorSchemeToggle from '@/components/theme/ColorSchemeToggle.vue'
+import UserApprovalsLink from '@/components/user-approvals/UserApprovalsLink.vue'
 import { useAuthenticationStore } from '@/stores/authentication-store'
+import { useCurrentUserStore } from '@/stores/current-user-store'
 import AppBrandMark from './AppBrandMark.vue'
 
 const authenticationStore = useAuthenticationStore()
+const currentUserStore = useCurrentUserStore()
 </script>
 
 <template>
@@ -13,7 +16,8 @@ const authenticationStore = useAuthenticationStore()
   >
     <div class="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
       <AppBrandMark />
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1 sm:gap-2">
+        <UserApprovalsLink v-if="currentUserStore.isAdmin" />
         <ColorSchemeToggle />
         <SignedInUserMenu v-if="authenticationStore.isSignedIn" />
       </div>
