@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<BaseIconProps>(), {
   accessibleLabel: undefined,
 })
 
+const ICON_STROKE_WIDTH = 1.8
+
 const iconPixelSizeBySize: Record<IconSize, number> = {
   xs: 14,
   sm: 16,
@@ -32,6 +34,7 @@ const isDecorative = computed(() => props.accessibleLabel === undefined)
   <HugeiconsIcon
     :icon="icon"
     :size="iconPixelSize"
+    :stroke-width="ICON_STROKE_WIDTH"
     class="shrink-0"
     :role="isDecorative ? undefined : 'img'"
     :aria-label="accessibleLabel"

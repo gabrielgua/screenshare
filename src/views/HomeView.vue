@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AccessDeniedNotice from '@/components/account-status/AccessDeniedNotice.vue'
+import AccountDeactivatedNotice from '@/components/account-status/AccountDeactivatedNotice.vue'
 import AccountLoadErrorNotice from '@/components/account-status/AccountLoadErrorNotice.vue'
 import PendingApprovalNotice from '@/components/account-status/PendingApprovalNotice.vue'
 import SignedInWelcome from '@/components/home/SignedInWelcome.vue'
@@ -11,7 +12,8 @@ import PageTransition from '@/components/layout/PageTransition.vue'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 
-type HomeScreen = 'loading' | 'signed-out' | 'load-error' | 'pending' | 'denied' | 'approved'
+type HomeScreen =
+  'loading' | 'signed-out' | 'load-error' | 'deactivated' | 'pending' | 'denied' | 'approved'
 
 const authenticationStore = useAuthenticationStore()
 const currentUserStore = useCurrentUserStore()
@@ -28,6 +30,9 @@ const visibleHomeScreen = computed<HomeScreen>(() => {
   }
   if (!currentUserStore.currentUser) {
     return 'load-error'
+  }
+  if (currentUserStore.isDeactivated) {
+    return 'deactivated'
   }
   if (currentUserStore.isPendingApproval) {
     return 'pending'
@@ -48,6 +53,7 @@ const visibleHomeScreen = computed<HomeScreen>(() => {
       />
       <SignedOutHero v-else-if="visibleHomeScreen === 'signed-out'" />
       <AccountLoadErrorNotice v-else-if="visibleHomeScreen === 'load-error'" />
+      <AccountDeactivatedNotice v-else-if="visibleHomeScreen === 'deactivated'" />
       <PendingApprovalNotice v-else-if="visibleHomeScreen === 'pending'" />
       <AccessDeniedNotice v-else-if="visibleHomeScreen === 'denied'" />
       <SignedInWelcome v-else />
