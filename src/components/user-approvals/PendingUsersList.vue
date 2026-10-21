@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import BaseButton from '@/components/button/BaseButton.vue'
+import LoadErrorRetry from '@/components/feedback/LoadErrorRetry.vue'
 import PageLoadingSpinner from '@/components/layout/PageLoadingSpinner.vue'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import StaggeredListTransition from '@/components/layout/StaggeredListTransition.vue'
-import BaseText from '@/components/typography/BaseText.vue'
 import { describeError } from '@/services/describe-error'
 import type { PlatformUser, UserReviewDecision } from '@/services/users-service'
 import { useActionFeedbackStore } from '@/stores/action-feedback-store'
@@ -81,7 +80,7 @@ async function submitReview(reviewMessage?: string) {
   }
 }
 
-function handleRetryButtonClick() {
+function handleRetryRequested() {
   pendingUsersStore.loadPendingUsers()
 }
 </script>
@@ -92,15 +91,11 @@ function handleRetryButtonClick() {
       v-if="pendingUsersStore.isLoadingPendingUsers && !pendingUsersStore.hasPendingUsers"
       accessible-label="Loading pending users"
     />
-    <div
+    <LoadErrorRetry
       v-else-if="pendingUsersStore.loadErrorMessage"
-      class="flex flex-col items-center gap-3 py-10 text-center"
-    >
-      <BaseText tone="danger" role="alert">{{ pendingUsersStore.loadErrorMessage }}</BaseText>
-      <BaseButton variant="neutral" appearance="outlined" @click="handleRetryButtonClick">
-        Try again
-      </BaseButton>
-    </div>
+      :error-message="pendingUsersStore.loadErrorMessage"
+      @retry-requested="handleRetryRequested"
+    />
     <PendingUsersEmptyState v-else-if="!pendingUsersStore.hasPendingUsers" />
     <StaggeredListTransition v-else tag="ul" class="flex flex-col gap-3">
       <li

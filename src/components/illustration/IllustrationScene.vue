@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type IllustrationMood = 'friendly' | 'blocked'
+export type IllustrationMood = 'friendly' | 'blocked' | 'paused'
 
 interface IllustrationSceneProps {
   accessibleLabel: string
@@ -13,21 +13,25 @@ withDefaults(defineProps<IllustrationSceneProps>(), {
 const backdropClassesByMood: Record<IllustrationMood, string> = {
   friendly: 'fill-brand-100 dark:fill-brand-950',
   blocked: 'fill-danger-100 dark:fill-danger-950',
+  paused: 'fill-neutral-200 dark:fill-neutral-800',
 }
 
 const windowHeaderClassesByMood: Record<IllustrationMood, string> = {
   friendly: 'fill-brand-500',
   blocked: 'fill-danger-500',
+  paused: 'fill-neutral-500',
 }
 
 const accentSparkleClassesByMood: Record<IllustrationMood, string> = {
   friendly: 'fill-success-400',
   blocked: 'fill-danger-400',
+  paused: 'fill-neutral-400',
 }
 
 const confettiClassesByMood: Record<IllustrationMood, string> = {
   friendly: 'fill-brand-300 dark:fill-brand-700',
   blocked: 'fill-danger-300 dark:fill-danger-700',
+  paused: 'fill-neutral-300 dark:fill-neutral-600',
 }
 </script>
 

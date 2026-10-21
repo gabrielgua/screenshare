@@ -14,10 +14,12 @@ export const useCurrentUserStore = defineStore('current-user', () => {
   const hasResolvedCurrentUser = ref(false)
   const loadErrorMessage = ref<string>()
 
-  const isAdmin = computed(
-    () => currentUser.value?.role === 'admin' && currentUser.value.approvalStatus === 'approved',
+  const isActive = computed(() => currentUser.value?.isActive === true)
+  const isDeactivated = computed(() => currentUser.value?.isActive === false)
+  const isApproved = computed(
+    () => isActive.value && currentUser.value?.approvalStatus === 'approved',
   )
-  const isApproved = computed(() => currentUser.value?.approvalStatus === 'approved')
+  const isAdmin = computed(() => isApproved.value && currentUser.value?.role === 'admin')
   const isPendingApproval = computed(() => currentUser.value?.approvalStatus === 'pending')
   const isDenied = computed(() => currentUser.value?.approvalStatus === 'denied')
 
@@ -61,7 +63,7 @@ export const useCurrentUserStore = defineStore('current-user', () => {
 
   watch(isWindowFocused, (isFocused) => {
     const signedInUserId = authenticationStore.signedInUser?.id
-    if (isFocused && signedInUserId && !isApproved.value) {
+    if (isFocused && signedInUserId) {
       loadCurrentUser(signedInUserId)
     }
   })
@@ -71,8 +73,10 @@ export const useCurrentUserStore = defineStore('current-user', () => {
     isLoadingCurrentUser,
     hasResolvedCurrentUser,
     loadErrorMessage,
-    isAdmin,
+    isActive,
+    isDeactivated,
     isApproved,
+    isAdmin,
     isPendingApproval,
     isDenied,
     waitUntilCurrentUserIsResolved,

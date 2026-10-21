@@ -15,7 +15,7 @@ useAuthenticationStore().restoreSession()
     <div class="flex flex-1 flex-col overflow-clip">
       <RouterView v-slot="{ Component, route }">
         <PageTransition>
-          <component :is="Component" :key="route.path" />
+          <component :is="Component" :key="route.matched[0]?.path ?? route.path" />
         </PageTransition>
       </RouterView>
     </div>

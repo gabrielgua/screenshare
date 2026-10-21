@@ -79,30 +79,49 @@ src/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton)
     form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea
     icon/                  BaseIcon, BaseSpinner, BaseIconCircle
-    surface/               BaseCard
+    surface/               BaseCard (padding none, compact or comfortable)
     typography/            BaseText (owns every text class), BaseHeading (renders BaseText)
     avatar/                BaseAvatar (image with an initials fallback)
-    badge/                 BaseBadge (small count pill)
+    badge/                 BaseBadge (solid count pill or soft labelled badge with an icon)
+    chip/                  BaseChip (toggle button), BaseChipGroup (generic multi select chips
+                           bound with v-model)
     dialog/                BaseModal (animated native <dialog> shell)
                            BaseDialog (BaseModal with title, body and actions)
-    feedback/              ActionFeedbackModal, AutoCloseCountdownBar
-    illustration/          Inline SVG illustrations themed with fill and stroke classes
-    authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar
-    account-status/        AccountStatusNotice and the pending, denied and load error notices
-    user-approvals/        Admin approvals: list, card, review dialog, header link
+    feedback/              ActionFeedbackModal, ConfirmActionModal, AutoCloseCountdownBar,
+                           LoadErrorRetry
+    admin/                 Admin layout pieces: AdminPanelLink, AdminNavigation and its tabs,
+                           AdminPageHeading, AdminRoleLabel
+    registered-users/      Admin users list: list, link cards, role and status badges, filters
+                           (debounced search plus role and status chips), and
+                           user-display-details.ts with the label, icon and color of every
+                           role and status
+    user-details/          Admin user page: header, information rows, and the management
+                           actions with their confirmation and feedback
+    illustration/          IllustrationScene (friendly, blocked and paused moods) and the
+                           pending, denied and deactivated illustrations
+    authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar,
+                           SignOutButton
+    account-status/        AccountStatusNotice and the pending, denied, deactivated and load
+                           error notices
+    user-approvals/        Admin approvals: list, card and review dialog
     home/                  SignedOutHero, SignedInWelcome
-    layout/                AppHeader, AppBrandMark, PageContainer, PageLoadingSpinner,
+    layout/                AppHeader, AppBrandMark, HomeLink, PageContainer, PageLoadingSpinner,
                            PageTransition, StaggeredListTransition
     theme/                 ColorSchemeToggle
   composables/             use-*.ts shared reactive logic
                            use-color-scheme.ts, use-form-field-accessibility.ts
   services/                supabase-client.ts and *-service.ts files that talk to Supabase
+  formatting/              Pure display formatters, like date-time.ts
   stores/                  *-store.ts Pinia stores
                            authentication-store.ts owns the session
                            current-user-store.ts owns the signed in user's role and approval
                            pending-users-store.ts owns the admin's pending list
+                           registered-users-store.ts owns the admin's users list and filters
+                           user-details-store.ts owns the user shown on the admin user page
+                           and its role and activation actions
                            action-feedback-store.ts owns the success and error modal
   views/                   Route views that only compose components
+    admin/                 AdminLayoutView and every page under /admin
   router/                  Vue Router setup and the admin route guard
 supabase/
   config.toml              Supabase project settings, pushed with the CLI
@@ -145,25 +164,46 @@ Every user who signs in with Discord must be approved by an admin before using t
 - **Table:** `public.users` holds one row per `auth.users` row: display name, avatar, email,
   `role` (`member` or `admin`) and `approval_status` (`pending`, `approved` or `denied`), plus the
   `review_message`, reviewer and review time. The review message is a welcome message for
-  approved users and a reason for denied users.
+  approved users and a reason for denied users. `is_active` turns an account off without deleting
+  anything. Users are never hard deleted.
 - **Sign up:** the `create_user_after_sign_up` trigger on `auth.users` inserts a `pending` row.
 - **Reading:** row level security lets users read only their own row. Admins read every row.
   Nobody can insert, update or delete rows from the API.
 - **Reviewing:** admins call `public.review_user(target_user_id, decision, message)`. It checks
   that the caller is an approved admin, refuses self reviews, and stores the optional message.
+- **Managing users:** admins call `public.set_user_active(target_user_id, should_be_active)` and
+  `public.set_user_role(target_user_id, new_role)`. Both refuse non admins and refuse changes to
+  the caller's own account, so the last admin can never lock everyone out. Only approved and
+  active users can become admins. Pending users cannot be activated or deactivated: they must be
+  approved or denied first, so their card only links to the approvals page.
 - **Helpers:** `private.is_admin()` and `private.is_approved_user()` live in the `private`
-  schema, which the API does not expose. Use `private.is_approved_user()` in row level security
-  policies of future tables so only approved users can use them.
-- **Making someone an admin:** there is no UI for this on purpose. Run:
+  schema, which the API does not expose. Both require `is_active`. Use
+  `private.is_approved_user()` in row level security policies of future tables so only approved,
+  active users can use them.
+- **First admin:** when there is no admin yet, promote one directly:
 
   ```sh
   pnpm supabase db query --linked "update public.users set role = 'admin', approval_status = 'approved' where id = '<user id>'"
   ```
 
-- **Frontend:** pending users see `PendingApprovalNotice`, denied users see `AccessDeniedNotice`
-  with the reason, approved users see the welcome message on `SignedInWelcome`, and admins get
-  the `/approvals` page, guarded in `router/index.ts`. Pending users recheck their status whenever
-  the window regains focus.
+- **Frontend:** deactivated users see `AccountDeactivatedNotice`, pending users see
+  `PendingApprovalNotice`, denied users see `AccessDeniedNotice` with the reason, and approved
+  users see the welcome message on `SignedInWelcome`. Every signed in user rechecks their account
+  whenever the window regains focus, so deactivation and approvals apply without a reload.
+- **Admin area:** every admin page lives under `/admin` and renders inside `AdminLayoutView`,
+  which shows the `AdminNavigation` tabs. The `/admin` route carries `meta.requiresAdmin`, and the
+  guard in `router/index.ts` checks every matched route, so new child pages are protected
+  automatically. Current pages are `/admin/approvals`, `/admin/users` and
+  `/admin/users/:userId`. The old `/approvals` address redirects. The header shows Home and an
+  "Admin" link with the pending count, and an `(Admin)` label next to the admin's name.
+- **Users list and user page:** `/admin/users` is a read only list of link cards, with "(You)" on
+  the admin's own card. Each card opens `/admin/users/:userId`, which shows every detail of the
+  user, including who reviewed them and when, plus the actions. Admin role and activation
+  changes go through `ConfirmActionModal` and then the feedback modal. Pending users only get a
+  link to approvals, and the admin's own page explains they cannot change their own account.
+- **Reviewer join:** the user page reads the reviewer's name with the PostgREST embed
+  `reviewer:reviewed_by(display_name)`. Use the column name as the hint for this self reference.
+  `users!reviewed_by` follows the relationship backwards and returns an empty list.
 - **Emails:** the pending screen promises an email when the account is ready, but sending it is
   not built yet. It needs an email provider and is the next step of the delivery plan.
 
@@ -208,8 +248,11 @@ The app feels bouncy on purpose. Every animation follows the same pattern:
 
 ### Confirmations
 
-Every action that changes data confirms its result with the shared feedback modal. Never build a
-one-off success or error message.
+Every action that changes data asks first with `ConfirmActionModal`, built on `BaseModal`, and
+then confirms its result with the shared feedback modal. Never build a one-off confirmation,
+success or error message. `ConfirmActionModal` takes a title, description, confirm label, icon
+and color variant, shows a spinner on the confirm button while `isSubmitting`, and cannot be
+closed until the action finishes.
 
 ```ts
 const actionFeedbackStore = useActionFeedbackStore()
@@ -268,8 +311,15 @@ English only, a short description, labels, and before and after screenshots for 
   request from `homolog`.
 - **Screenshots stay local** in the gitignored `.pr-screenshots/<branch-name>/` folder. Never push
   them to the remote. The user drags them into the pull request on GitHub.
+- **Screenshots never show real users' private data.** The repository is public. Capture with
+  test users on `example.com` addresses, and mask any other email before capturing. Check every
+  screenshot before attaching it.
 
 ### Adding an icon
+
+`BaseIcon` draws every icon with a stroke width of 2 instead of Hugeicons' default 1.5. At small
+sizes the default stroke shrinks to about 1px, lands between screen pixels and looks fuzzy next to
+semibold text. Never render `HugeiconsIcon` directly, so every icon keeps this weight.
 
 Import it from `@hugeicons/core-free-icons` inside `src/theme/app-icons.ts` and export it under a
 name that describes its meaning in the app, like `ShareScreenIcon`. Components import icons only
