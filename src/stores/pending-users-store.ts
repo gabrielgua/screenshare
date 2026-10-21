@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { describeError } from '@/services/describe-error'
 import {
   fetchPendingUsers,
   reviewUser,
@@ -21,8 +22,7 @@ export const usePendingUsersStore = defineStore('pending-users', () => {
     try {
       pendingUsers.value = await fetchPendingUsers()
     } catch (loadError) {
-      loadErrorMessage.value =
-        loadError instanceof Error ? loadError.message : 'Could not load pending users'
+      loadErrorMessage.value = describeError(loadError, 'Could not load pending users')
     } finally {
       isLoadingPendingUsers.value = false
     }
@@ -31,9 +31,9 @@ export const usePendingUsersStore = defineStore('pending-users', () => {
   async function reviewPendingUser(
     targetUserId: string,
     decision: UserReviewDecision,
-    reason?: string,
+    message?: string,
   ) {
-    await reviewUser(targetUserId, decision, reason)
+    await reviewUser(targetUserId, decision, message)
     pendingUsers.value = pendingUsers.value.filter((pendingUser) => pendingUser.id !== targetUserId)
   }
 

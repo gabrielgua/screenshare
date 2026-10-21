@@ -5,9 +5,9 @@ import AccountLoadErrorNotice from '@/components/account-status/AccountLoadError
 import PendingApprovalNotice from '@/components/account-status/PendingApprovalNotice.vue'
 import SignedInWelcome from '@/components/home/SignedInWelcome.vue'
 import SignedOutHero from '@/components/home/SignedOutHero.vue'
-import AppHeader from '@/components/layout/AppHeader.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import PageLoadingSpinner from '@/components/layout/PageLoadingSpinner.vue'
+import PageTransition from '@/components/layout/PageTransition.vue'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 
@@ -40,9 +40,8 @@ const visibleHomeScreen = computed<HomeScreen>(() => {
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col">
-    <AppHeader />
-    <PageContainer class="flex-1 justify-center">
+  <PageContainer class="flex-1 justify-center">
+    <PageTransition>
       <PageLoadingSpinner
         v-if="visibleHomeScreen === 'loading'"
         accessible-label="Loading your account"
@@ -52,6 +51,6 @@ const visibleHomeScreen = computed<HomeScreen>(() => {
       <PendingApprovalNotice v-else-if="visibleHomeScreen === 'pending'" />
       <AccessDeniedNotice v-else-if="visibleHomeScreen === 'denied'" />
       <SignedInWelcome v-else />
-    </PageContainer>
-  </div>
+    </PageTransition>
+  </PageContainer>
 </template>

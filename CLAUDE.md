@@ -83,13 +83,16 @@ src/
     typography/            BaseText (owns every text class), BaseHeading (renders BaseText)
     avatar/                BaseAvatar (image with an initials fallback)
     badge/                 BaseBadge (small count pill)
-    dialog/                BaseDialog (native <dialog> with title, body and actions)
+    dialog/                BaseModal (animated native <dialog> shell)
+                           BaseDialog (BaseModal with title, body and actions)
+    feedback/              ActionFeedbackModal, AutoCloseCountdownBar
     illustration/          Inline SVG illustrations themed with fill and stroke classes
     authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar
     account-status/        AccountStatusNotice and the pending, denied and load error notices
     user-approvals/        Admin approvals: list, card, review dialog, header link
     home/                  SignedOutHero, SignedInWelcome
-    layout/                AppHeader, AppBrandMark, PageContainer, PageLoadingSpinner
+    layout/                AppHeader, AppBrandMark, PageContainer, PageLoadingSpinner,
+                           PageTransition, StaggeredListTransition
     theme/                 ColorSchemeToggle
   composables/             use-*.ts shared reactive logic
                            use-color-scheme.ts, use-form-field-accessibility.ts
@@ -98,6 +101,7 @@ src/
                            authentication-store.ts owns the session
                            current-user-store.ts owns the signed in user's role and approval
                            pending-users-store.ts owns the admin's pending list
+                           action-feedback-store.ts owns the success and error modal
   views/                   Route views that only compose components
   router/                  Vue Router setup and the admin route guard
 supabase/
@@ -140,12 +144,13 @@ Every user who signs in with Discord must be approved by an admin before using t
 
 - **Table:** `public.users` holds one row per `auth.users` row: display name, avatar, email,
   `role` (`member` or `admin`) and `approval_status` (`pending`, `approved` or `denied`), plus the
-  review reason, reviewer and review time.
+  `review_message`, reviewer and review time. The review message is a welcome message for
+  approved users and a reason for denied users.
 - **Sign up:** the `create_user_after_sign_up` trigger on `auth.users` inserts a `pending` row.
 - **Reading:** row level security lets users read only their own row. Admins read every row.
   Nobody can insert, update or delete rows from the API.
-- **Reviewing:** admins call `public.review_user(target_user_id, decision, reason)`. It checks that
-  the caller is an approved admin, refuses self reviews, and stores the optional reason.
+- **Reviewing:** admins call `public.review_user(target_user_id, decision, message)`. It checks
+  that the caller is an approved admin, refuses self reviews, and stores the optional message.
 - **Helpers:** `private.is_admin()` and `private.is_approved_user()` live in the `private`
   schema, which the API does not expose. Use `private.is_approved_user()` in row level security
   policies of future tables so only approved users can use them.
@@ -156,8 +161,9 @@ Every user who signs in with Discord must be approved by an admin before using t
   ```
 
 - **Frontend:** pending users see `PendingApprovalNotice`, denied users see `AccessDeniedNotice`
-  with the reason, and admins get the `/approvals` page, guarded in `router/index.ts`. Pending
-  users recheck their status whenever the window regains focus.
+  with the reason, approved users see the welcome message on `SignedInWelcome`, and admins get
+  the `/approvals` page, guarded in `router/index.ts`. Pending users recheck their status whenever
+  the window regains focus.
 - **Emails:** the pending screen promises an email when the account is ready, but sending it is
   not built yet. It needs an email provider and is the next step of the delivery plan.
 
@@ -179,6 +185,41 @@ Defined in `src/theme/theme.css` with Tailwind v4 `@theme`. Use them as normal T
   2px low. Before switching fonts, measure the new font's offset in Chrome.
 - **Radii:** `rounded-control` for buttons and inputs, `rounded-card` for panels.
 - **Shadows:** `shadow-card` for raised surfaces.
+- **Motion:** `ease-bounce` is the overshooting curve every entering animation uses.
+  `animate-pop-in` pops an element in with that curve. `animate-shrink-to-start` shrinks a bar
+  to its left edge, with the duration set per use through `animation-duration`.
+
+### Animations
+
+The app feels bouncy on purpose. Every animation follows the same pattern:
+
+- **Entering is bouncy:** use `ease-bounce` with a longer duration, around 300 to 500ms.
+- **Leaving is quick:** use `ease-in` with a short duration, around 150ms, and no bounce.
+- **Pages and screens:** wrap anything that swaps content in `PageTransition`. `App.vue` already
+  wraps every route, and views use it when they switch between states.
+- **Lists:** render lists through `StaggeredListTransition`, passing the list element as `tag`
+  and giving each item a `data-stagger-index` with its position. Items pop in one after another,
+  leaving items fade out, and the rest slide into place.
+- **Modals:** always build on `BaseModal`. It animates the native dialog and its backdrop in and
+  out with `starting:` and `transition-discrete`.
+- **Reduced motion:** every animation also gets `motion-reduce:transition-none` or
+  `motion-reduce:animate-none`.
+- **Illustrations stay still.** Only small sparkles may pulse.
+
+### Confirmations
+
+Every action that changes data confirms its result with the shared feedback modal. Never build a
+one-off success or error message.
+
+```ts
+const actionFeedbackStore = useActionFeedbackStore()
+actionFeedbackStore.showSuccessFeedback('Jamie is in!', 'They can use the platform now.')
+actionFeedbackStore.showErrorFeedback('Could not save this review', describeError(error, 'Try again.'))
+```
+
+The modal is mounted once in `App.vue`. Success closes itself after 2.5 seconds and errors after
+4.5 seconds, with a countdown bar. Turn unknown errors into text with `describeError` from
+`src/services/describe-error.ts`.
 
 ### Dark mode
 

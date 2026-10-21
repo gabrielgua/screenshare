@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { until, useWindowFocus } from '@vueuse/core'
+import { describeError } from '@/services/describe-error'
 import { fetchUserById, type PlatformUser } from '@/services/users-service'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 
@@ -26,8 +27,7 @@ export const useCurrentUserStore = defineStore('current-user', () => {
     try {
       currentUser.value = await fetchUserById(signedInUserId)
     } catch (loadError) {
-      loadErrorMessage.value =
-        loadError instanceof Error ? loadError.message : 'Could not load your account'
+      loadErrorMessage.value = describeError(loadError, 'Could not load your account')
     } finally {
       isLoadingCurrentUser.value = false
       hasResolvedCurrentUser.value = true

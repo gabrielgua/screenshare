@@ -1,28 +1,13 @@
+<script setup lang="ts">
+import IllustrationScene from './IllustrationScene.vue'
+</script>
+
 <template>
-  <svg
-    viewBox="0 0 240 180"
-    class="h-auto w-56 sm:w-64"
-    role="img"
-    aria-label="An hourglass on a screen next to an envelope"
+  <IllustrationScene
+    accessible-label="An hourglass on a screen next to an envelope"
+    mood="friendly"
   >
-    <circle cx="120" cy="92" r="78" class="fill-brand-100 dark:fill-brand-950" />
-
-    <rect
-      x="52"
-      y="38"
-      width="136"
-      height="96"
-      rx="14"
-      class="fill-white stroke-neutral-200 dark:fill-neutral-800 dark:stroke-neutral-700"
-      stroke-width="2"
-    />
-    <rect x="52" y="38" width="136" height="22" rx="14" class="fill-brand-500" />
-    <rect x="52" y="50" width="136" height="10" class="fill-brand-500" />
-    <circle cx="66" cy="49" r="3.5" class="fill-white/80" />
-    <circle cx="78" cy="49" r="3.5" class="fill-white/60" />
-    <circle cx="90" cy="49" r="3.5" class="fill-white/40" />
-
-    <g class="origin-center">
+    <template #window-content>
       <rect
         x="104"
         y="70"
@@ -65,9 +50,9 @@
         rx="1"
         class="fill-warning-400 motion-safe:animate-pulse"
       />
-    </g>
+    </template>
 
-    <g class="motion-safe:animate-bounce">
+    <template #floating-accessory>
       <rect
         x="160"
         y="112"
@@ -85,17 +70,6 @@
         stroke-linecap="round"
         stroke-linejoin="round"
       />
-    </g>
-
-    <path
-      d="M34 54 L37 62 L45 65 L37 68 L34 76 L31 68 L23 65 L31 62 Z"
-      class="fill-warning-400 motion-safe:animate-pulse"
-    />
-    <path
-      d="M200 28 L202 33 L207 35 L202 37 L200 42 L198 37 L193 35 L198 33 Z"
-      class="fill-success-400 motion-safe:animate-pulse"
-    />
-    <circle cx="44" cy="134" r="4" class="fill-brand-300 dark:fill-brand-700" />
-    <circle cx="214" cy="80" r="3" class="fill-brand-300 dark:fill-brand-700" />
-  </svg>
+    </template>
+  </IllustrationScene>
 </template>

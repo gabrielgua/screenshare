@@ -13,7 +13,7 @@ export interface PlatformUser {
   email?: string
   role: UserRole
   approvalStatus: UserApprovalStatus
-  reviewReason?: string
+  reviewMessage?: string
   createdAt: string
 }
 
@@ -24,12 +24,12 @@ interface UserRow {
   email: string | null
   role: UserRole
   approval_status: UserApprovalStatus
-  review_reason: string | null
+  review_message: string | null
   created_at: string
 }
 
 const USER_COLUMNS =
-  'id, display_name, avatar_url, email, role, approval_status, review_reason, created_at'
+  'id, display_name, avatar_url, email, role, approval_status, review_message, created_at'
 
 function mapUserRowToPlatformUser(userRow: UserRow): PlatformUser {
   return {
@@ -39,7 +39,7 @@ function mapUserRowToPlatformUser(userRow: UserRow): PlatformUser {
     email: userRow.email ?? undefined,
     role: userRow.role,
     approvalStatus: userRow.approval_status,
-    reviewReason: userRow.review_reason ?? undefined,
+    reviewMessage: userRow.review_message ?? undefined,
     createdAt: userRow.created_at,
   }
 }
@@ -72,12 +72,12 @@ export async function fetchPendingUsers(): Promise<PlatformUser[]> {
 export async function reviewUser(
   targetUserId: string,
   decision: UserReviewDecision,
-  reason?: string,
+  message?: string,
 ): Promise<void> {
   const { error } = await supabaseClient.rpc('review_user', {
     target_user_id: targetUserId,
     decision,
-    reason: reason ?? null,
+    message: message ?? null,
   })
   if (error) {
     throw error

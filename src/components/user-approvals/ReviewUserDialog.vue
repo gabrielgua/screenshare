@@ -5,45 +5,73 @@ import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import BaseTextarea from '@/components/form/BaseTextarea.vue'
 import BaseText from '@/components/typography/BaseText.vue'
 import type { PlatformUser, UserReviewDecision } from '@/services/users-service'
-import { ApproveIcon, DenyIcon } from '@/theme/app-icons'
+import { ApproveIcon, DenyIcon, type AppIcon } from '@/theme/app-icons'
+import type { ColorVariant } from '@/theme/color-variants'
 
 interface ReviewUserDialogProps {
   reviewedUser?: PlatformUser
   decision: UserReviewDecision
   isSubmitting?: boolean
-  errorMessage?: string
+}
+
+interface ReviewDecisionCopy {
+  titlePrefix: string
+  description: string
+  messageLabel: string
+  messagePlaceholder: string
+  confirmLabel: string
 }
 
 const props = withDefaults(defineProps<ReviewUserDialogProps>(), {
   reviewedUser: undefined,
   isSubmitting: false,
-  errorMessage: undefined,
 })
 
 const emit = defineEmits<{
-  reviewSubmitted: [reason?: string]
+  reviewSubmitted: [message?: string]
 }>()
 
 const isOpen = defineModel<boolean>('open', { default: false })
 
-const MAXIMUM_REASON_LENGTH = 500
+const MAXIMUM_MESSAGE_LENGTH = 500
 
-const reason = ref('')
+const copyByDecision: Record<UserReviewDecision, ReviewDecisionCopy> = {
+  approved: {
+    titlePrefix: 'Approve',
+    description: 'They will get access to the platform right away.',
+    messageLabel: 'Welcome message',
+    messagePlaceholder: 'Send a welcome message',
+    confirmLabel: 'Approve',
+  },
+  denied: {
+    titlePrefix: 'Deny',
+    description:
+      'They will not be able to use the platform. They will see your reason, if you add one.',
+    messageLabel: 'Reason',
+    messagePlaceholder: 'Let them know why',
+    confirmLabel: 'Deny',
+  },
+}
 
-const isApproval = computed(() => props.decision === 'approved')
+const confirmVariantByDecision: Record<UserReviewDecision, ColorVariant> = {
+  approved: 'success',
+  denied: 'danger',
+}
+
+const confirmIconByDecision: Record<UserReviewDecision, AppIcon> = {
+  approved: ApproveIcon,
+  denied: DenyIcon,
+}
+
+const reviewMessage = ref('')
+
+const decisionCopy = computed(() => copyByDecision[props.decision])
 const reviewedUserName = computed(() => props.reviewedUser?.displayName ?? 'this user')
-const dialogTitle = computed(() =>
-  isApproval.value ? `Approve ${reviewedUserName.value}?` : `Deny ${reviewedUserName.value}?`,
-)
-const dialogDescription = computed(() =>
-  isApproval.value
-    ? 'They will get access to the platform right away.'
-    : 'They will not be able to use the platform. They will see the reason below, if you add one.',
-)
+const dialogTitle = computed(() => `${decisionCopy.value.titlePrefix} ${reviewedUserName.value}?`)
 
 watch(isOpen, (isNowOpen) => {
   if (isNowOpen) {
-    reason.value = ''
+    reviewMessage.value = ''
   }
 })
 
@@ -52,24 +80,22 @@ function handleCancelButtonClick() {
 }
 
 function handleConfirmButtonClick() {
-  const trimmedReason = reason.value.trim()
-  emit('reviewSubmitted', trimmedReason.length > 0 ? trimmedReason : undefined)
+  const trimmedMessage = reviewMessage.value.trim()
+  emit('reviewSubmitted', trimmedMessage.length > 0 ? trimmedMessage : undefined)
 }
 </script>
 
 <template>
   <BaseDialog v-model:open="isOpen" :title="dialogTitle" :is-close-blocked="isSubmitting">
-    <BaseText tone="muted">{{ dialogDescription }}</BaseText>
+    <BaseText tone="muted">{{ decisionCopy.description }}</BaseText>
     <BaseTextarea
-      v-model="reason"
-      label="Reason"
+      v-model="reviewMessage"
+      :label="decisionCopy.messageLabel"
       hint="Optional. Up to 500 characters."
-      placeholder="Add a short note about this decision"
-      :maximum-length="MAXIMUM_REASON_LENGTH"
+      :placeholder="decisionCopy.messagePlaceholder"
+      :maximum-length="MAXIMUM_MESSAGE_LENGTH"
       :visible-row-count="3"
       :is-disabled="isSubmitting"
-      :status="errorMessage ? 'danger' : 'default'"
-      :status-message="errorMessage"
     />
     <template #actions>
       <BaseButton
@@ -81,12 +107,12 @@ function handleConfirmButtonClick() {
         Cancel
       </BaseButton>
       <BaseButton
-        :variant="isApproval ? 'success' : 'danger'"
-        :leading-icon="isApproval ? ApproveIcon : DenyIcon"
+        :variant="confirmVariantByDecision[decision]"
+        :leading-icon="confirmIconByDecision[decision]"
         :is-loading="isSubmitting"
         @click="handleConfirmButtonClick"
       >
-        {{ isApproval ? 'Approve' : 'Deny' }}
+        {{ decisionCopy.confirmLabel }}
       </BaseButton>
     </template>
   </BaseDialog>
