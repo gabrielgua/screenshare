@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import LoadErrorRetry from '@/components/feedback/LoadErrorRetry.vue'
+import NoMatchingResults from '@/components/feedback/NoMatchingResults.vue'
 import PageLoadingSpinner from '@/components/layout/PageLoadingSpinner.vue'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import StaggeredListTransition from '@/components/layout/StaggeredListTransition.vue'
@@ -9,7 +10,6 @@ import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRegisteredUsersStore } from '@/stores/registered-users-store'
 import RegisteredUserCard from './RegisteredUserCard.vue'
 import RegisteredUsersFilters from './RegisteredUsersFilters.vue'
-import RegisteredUsersNoResults from './RegisteredUsersNoResults.vue'
 
 const registeredUsersStore = useRegisteredUsersStore()
 const currentUserStore = useCurrentUserStore()
@@ -29,6 +29,10 @@ onMounted(() => {
 
 function handleRetryRequested() {
   registeredUsersStore.loadRegisteredUsers()
+}
+
+function handleClearFiltersRequested() {
+  registeredUsersStore.clearFilters()
 }
 </script>
 
@@ -51,7 +55,11 @@ function handleRetryRequested() {
         {{ userCountSummary }}
       </BaseText>
       <PageTransition>
-        <RegisteredUsersNoResults v-if="registeredUsersStore.filteredRegisteredUserCount === 0" />
+        <NoMatchingResults
+          v-if="registeredUsersStore.filteredRegisteredUserCount === 0"
+          title="No users match your filters"
+          @clear-filters-requested="handleClearFiltersRequested"
+        />
         <StaggeredListTransition v-else tag="ul" class="flex flex-col gap-3">
           <li
             v-for="(registeredUser, listPosition) in registeredUsersStore.filteredRegisteredUsers"

@@ -8,8 +8,8 @@ import BaseText from '@/components/typography/BaseText.vue'
 import { formatDateTime } from '@/formatting/date-time'
 import type { PlatformUserDetails } from '@/services/users-service'
 import { InactiveIcon, SuccessIcon } from '@/theme/app-icons'
-import UserDetailsInformationRow from './UserDetailsInformationRow.vue'
-import UserDetailsSection from './UserDetailsSection.vue'
+import AdminDetailsInformationRow from '@/components/admin/AdminDetailsInformationRow.vue'
+import AdminDetailsSection from '@/components/admin/AdminDetailsSection.vue'
 
 interface UserDetailsInformationProps {
   viewedUser: PlatformUserDetails
@@ -24,22 +24,22 @@ const reviewMessageLabel = computed(() =>
 </script>
 
 <template>
-  <UserDetailsSection title="Information">
+  <AdminDetailsSection title="Information">
     <dl class="flex flex-col">
-      <UserDetailsInformationRow label="Email">
+      <AdminDetailsInformationRow label="Email">
         {{ viewedUser.email ?? 'Not shared by Discord' }}
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow label="Joined">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow label="Joined">
         {{ formatDateTime(viewedUser.createdAt) }}
         <BaseText as="span" size="sm" tone="subtle">({{ timeSinceSignUp }})</BaseText>
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow label="Role">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow label="Role">
         <UserRoleBadge :role="viewedUser.role" />
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow label="Approval">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow label="Approval">
         <UserApprovalStatusBadge :approval-status="viewedUser.approvalStatus" />
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow label="Account">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow label="Account">
         <BaseBadge
           appearance="soft"
           :variant="viewedUser.isActive ? 'success' : 'neutral'"
@@ -47,21 +47,21 @@ const reviewMessageLabel = computed(() =>
         >
           {{ viewedUser.isActive ? 'Active' : 'Inactive' }}
         </BaseBadge>
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow v-if="viewedUser.reviewedAt" label="Reviewed">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow v-if="viewedUser.reviewedAt" label="Reviewed">
         {{ formatDateTime(viewedUser.reviewedAt) }}
         <BaseText v-if="viewedUser.reviewerName" as="span" size="sm" tone="subtle">
           by {{ viewedUser.reviewerName }}
         </BaseText>
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow v-if="viewedUser.reviewMessage" :label="reviewMessageLabel">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow v-if="viewedUser.reviewMessage" :label="reviewMessageLabel">
         <span class="whitespace-pre-line">{{ viewedUser.reviewMessage }}</span>
-      </UserDetailsInformationRow>
-      <UserDetailsInformationRow label="User ID">
+      </AdminDetailsInformationRow>
+      <AdminDetailsInformationRow label="User ID">
         <span class="font-mono text-caption break-all text-neutral-600 dark:text-neutral-400">
           {{ viewedUser.id }}
         </span>
-      </UserDetailsInformationRow>
+      </AdminDetailsInformationRow>
     </dl>
-  </UserDetailsSection>
+  </AdminDetailsSection>
 </template>

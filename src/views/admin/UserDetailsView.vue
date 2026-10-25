@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AdminBackLink from '@/components/admin/AdminBackLink.vue'
 import LoadErrorRetry from '@/components/feedback/LoadErrorRetry.vue'
 import PageLoadingSpinner from '@/components/layout/PageLoadingSpinner.vue'
 import PageTransition from '@/components/layout/PageTransition.vue'
-import UserDetailsBackLink from '@/components/user-details/UserDetailsBackLink.vue'
 import UserDetailsHeader from '@/components/user-details/UserDetailsHeader.vue'
 import UserDetailsInformation from '@/components/user-details/UserDetailsInformation.vue'
 import UserManagementActions from '@/components/user-details/UserManagementActions.vue'
@@ -29,7 +29,7 @@ function handleRetryRequested() {
 
 <template>
   <section class="flex flex-col gap-4">
-    <UserDetailsBackLink />
+    <AdminBackLink :destination="{ name: 'admin-users' }" label="All users" />
     <PageTransition>
       <PageLoadingSpinner
         v-if="userDetailsStore.isLoadingViewedUser && !userDetailsStore.viewedUser"

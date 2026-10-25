@@ -45,9 +45,10 @@ Mobile browsers cannot capture the screen, so phones can watch streams but not s
 
 1. **Design system** (done): theme tokens, typography, buttons, inputs, icons, dark mode.
 2. **Supabase project and Discord sign in** (done).
-3. **Account approval** (current): admins approve or deny every new user.
+3. **Account approval** (done): admins approve or deny every new user.
 4. **Approval emails**: email users when their account is approved. Not built yet.
-5. **Rooms and presence** with Supabase Realtime.
+5. **Rooms** (current): create rooms, share links, manage names and members. Presence with
+   Supabase Realtime comes next.
 6. **Screen sharing** with `getDisplayMedia` and WebRTC.
 
 ## Commands
@@ -79,7 +80,8 @@ src/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton)
     form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea
     icon/                  BaseIcon, BaseSpinner, BaseIconCircle
-    surface/               BaseCard (padding none, compact or comfortable)
+    surface/               BaseCard (padding none, compact or comfortable), BaseLinkCard (a card
+                           that links somewhere, with a leading slot and an arrow)
     typography/            BaseText (owns every text class), BaseHeading (renders BaseText)
     avatar/                BaseAvatar (image with an initials fallback)
     badge/                 BaseBadge (solid count pill or soft labelled badge with an icon)
@@ -88,15 +90,19 @@ src/
     dialog/                BaseModal (animated native <dialog> shell)
                            BaseDialog (BaseModal with title, body and actions)
     feedback/              ActionFeedbackModal, ConfirmActionModal, AutoCloseCountdownBar,
-                           LoadErrorRetry
+                           LoadErrorRetry, NoMatchingResults
     admin/                 Admin layout pieces: AdminPanelLink, AdminNavigation and its tabs,
-                           AdminPageHeading, AdminRoleLabel
+                           AdminPageHeading, AdminRoleLabel, AdminBackLink, and the details page
+                           pieces AdminDetailsSection, AdminDetailsInformationRow and
+                           AdminDetailsActionRow
     registered-users/      Admin users list: list, link cards, role and status badges, filters
                            (debounced search plus role and status chips), and
                            user-display-details.ts with the label, icon and color of every
                            role and status
-    user-details/          Admin user page: header, information rows, and the management
-                           actions with their confirmation and feedback
+    user-details/          Admin user page: header, information, and the management actions
+                           with their confirmation and feedback
+    administered-rooms/    Admin rooms list: search, link cards and empty state
+    room-details/          Admin room page: header, information and actions
     illustration/          IllustrationScene (friendly, blocked and paused moods) and the
                            pending, denied and deactivated illustrations
     authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar,
@@ -104,14 +110,17 @@ src/
     account-status/        AccountStatusNotice and the pending, denied, deactivated and load
                            error notices
     user-approvals/        Admin approvals: list, card and review dialog
-    home/                  SignedOutHero, SignedInWelcome
+    rooms/                 Rooms dashboard section, room name dialog and rename button, room
+                           page header, share link button, stage placeholder, member and
+                           blocked user sections, invitation and unavailable notices
+    home/                  SignedOutHero, SignedInDashboard (welcome plus the user's rooms)
     layout/                AppHeader, AppBrandMark, HomeLink, PageContainer, PageLoadingSpinner,
                            PageTransition, StaggeredListTransition
     theme/                 ColorSchemeToggle
   composables/             use-*.ts shared reactive logic
                            use-color-scheme.ts, use-form-field-accessibility.ts
   services/                supabase-client.ts and *-service.ts files that talk to Supabase
-  formatting/              Pure display formatters, like date-time.ts
+  formatting/              Pure display formatters, like date-time.ts and member-count.ts
   stores/                  *-store.ts Pinia stores
                            authentication-store.ts owns the session
                            current-user-store.ts owns the signed in user's role and approval
@@ -120,6 +129,10 @@ src/
                            user-details-store.ts owns the user shown on the admin user page
                            and its role and activation actions
                            action-feedback-store.ts owns the success and error modal
+                           my-rooms-store.ts owns the signed in user's rooms and creation
+                           room-store.ts owns the room shown on the room page and the admin
+                           room page: preview, room, members, blocked users, actions
+                           administered-rooms-store.ts owns the admin's rooms list and search
   views/                   Route views that only compose components
     admin/                 AdminLayoutView and every page under /admin
   router/                  Vue Router setup and the admin route guard
@@ -193,8 +206,8 @@ Every user who signs in with Discord must be approved by an admin before using t
 - **Admin area:** every admin page lives under `/admin` and renders inside `AdminLayoutView`,
   which shows the `AdminNavigation` tabs. The `/admin` route carries `meta.requiresAdmin`, and the
   guard in `router/index.ts` checks every matched route, so new child pages are protected
-  automatically. Current pages are `/admin/approvals`, `/admin/users` and
-  `/admin/users/:userId`. The old `/approvals` address redirects. The header shows Home and an
+  automatically. Current pages are `/admin/approvals`, `/admin/users`, `/admin/users/:userId`,
+  `/admin/rooms` and `/admin/rooms/:roomId`. The old `/approvals` address redirects. The header shows Home and an
   "Admin" link with the pending count, and an `(Admin)` label next to the admin's name.
 - **Users list and user page:** `/admin/users` is a read only list of link cards, with "(You)" on
   the admin's own card. Each card opens `/admin/users/:userId`, which shows every detail of the
@@ -206,6 +219,40 @@ Every user who signs in with Discord must be approved by an admin before using t
   `users!reviewed_by` follows the relationship backwards and returns an empty list.
 - **Emails:** the pending screen promises an email when the account is ready, but sending it is
   not built yet. It needs an email provider and is the next step of the delivery plan.
+
+## Rooms
+
+Approved, active users meet in rooms. A room is shared by sending its link, `/rooms/<room id>`.
+
+- **Tables:** `public.rooms` (name of 1 to 60 characters, owner, timestamps) and
+  `public.room_members` (room, user, joined time). Rooms persist forever.
+- **Rules:** members can own one room, admins can own any number. Creating a room adds the owner
+  as its first member. The owner or any admin can rename a room and remove members. The owner
+  can never be removed or leave their own room. Anyone else can leave, and can join again with the
+  link. Users can join as many rooms as they want. Rooms are never deleted, only renamed.
+- **Blocking:** removing a member also adds them to `public.room_blocked_users`, with who blocked
+  them and when. Blocked users see a notice instead of the invitation, and `join_room` refuses
+  them. The owner or any admin can unblock them, which lets them join again with the link but
+  does not add them back.
+- **Reading:** row level security lets approved users read only rooms and memberships of rooms
+  they belong to, and admins read all of them. Users rows stay private, so member names and
+  avatars come from `public.list_room_members`, which never returns emails.
+- **Functions:** `create_room`, `rename_room`, `join_room`, `leave_room`, `remove_room_member`,
+  `get_room_preview` (the invitation shown before joining, including whether the caller is
+  blocked), `list_room_members`, `list_my_rooms`, `list_blocked_room_users`,
+  `unblock_room_user` and the admin only `list_all_rooms`. They all call `private.ensure_caller_is_approved()`. Room management goes
+  through `private.find_room_the_caller_can_manage()`.
+- **Links while signed out:** Discord sign in returns to the page it started from, so a shared
+  room link survives sign in. The Supabase config allows `http://localhost:5173/**` as a
+  redirect for that. Add the production address with `/**` once deployed.
+- **Frontend:** the approved home page is the rooms dashboard. `/rooms/:roomId` shows a sign in
+  prompt, an approval notice, a not found notice, a blocked notice, the join invitation or the
+  room itself. The room page has the header, a placeholder where screen sharing will go, the
+  member cards, and for managers the blocked users once anyone is blocked.
+- **Admin rooms:** the dashboard shows admins only their own rooms. `/admin/rooms` lists every
+  room with a debounced search by room or owner name, and each card opens
+  `/admin/rooms/:roomId`. That page shows the room's details, renames it, removes members and
+  unblocks users. It reuses `room-store.ts` and the room page's member and blocked sections.
 
 ## Design system
 

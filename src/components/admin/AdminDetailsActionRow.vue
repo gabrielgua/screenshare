@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import BaseText from '@/components/typography/BaseText.vue'
 
-interface UserManagementActionRowProps {
+interface AdminDetailsActionRowProps {
   title: string
   description: string
 }
 
-defineProps<UserManagementActionRowProps>()
+defineProps<AdminDetailsActionRowProps>()
 </script>
 
 <template>

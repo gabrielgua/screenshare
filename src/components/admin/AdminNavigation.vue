@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePendingUsersStore } from '@/stores/pending-users-store'
-import { RegisteredUsersIcon, UserApprovalsIcon } from '@/theme/app-icons'
+import { RegisteredUsersIcon, RoomIcon, UserApprovalsIcon } from '@/theme/app-icons'
 import AdminNavigationTab from './AdminNavigationTab.vue'
 
 const pendingUsersStore = usePendingUsersStore()
@@ -22,5 +22,6 @@ const pendingUsersStore = usePendingUsersStore()
       label="Users"
       :icon="RegisteredUsersIcon"
     />
+    <AdminNavigationTab :destination="{ name: 'admin-rooms' }" label="Rooms" :icon="RoomIcon" />
   </nav>
 </template>

@@ -3,20 +3,27 @@ import BaseButton from '@/components/button/BaseButton.vue'
 import BaseIconCircle from '@/components/icon/BaseIconCircle.vue'
 import BaseCard from '@/components/surface/BaseCard.vue'
 import BaseText from '@/components/typography/BaseText.vue'
-import { useRegisteredUsersStore } from '@/stores/registered-users-store'
 import { SearchIcon } from '@/theme/app-icons'
 
-const registeredUsersStore = useRegisteredUsersStore()
+interface NoMatchingResultsProps {
+  title: string
+}
+
+defineProps<NoMatchingResultsProps>()
+
+const emit = defineEmits<{
+  clearFiltersRequested: []
+}>()
 
 function handleClearFiltersButtonClick() {
-  registeredUsersStore.clearFilters()
+  emit('clearFiltersRequested')
 }
 </script>
 
 <template>
   <BaseCard class="flex flex-col items-center gap-3 py-10 text-center">
     <BaseIconCircle :icon="SearchIcon" variant="neutral" />
-    <BaseText weight="semibold">No users match your filters</BaseText>
+    <BaseText weight="semibold">{{ title }}</BaseText>
     <BaseText size="sm" tone="muted">Try another search or clear the filters.</BaseText>
     <BaseButton variant="neutral" appearance="outlined" @click="handleClearFiltersButtonClick">
       Clear filters

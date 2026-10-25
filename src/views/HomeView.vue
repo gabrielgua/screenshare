@@ -4,7 +4,7 @@ import AccessDeniedNotice from '@/components/account-status/AccessDeniedNotice.v
 import AccountDeactivatedNotice from '@/components/account-status/AccountDeactivatedNotice.vue'
 import AccountLoadErrorNotice from '@/components/account-status/AccountLoadErrorNotice.vue'
 import PendingApprovalNotice from '@/components/account-status/PendingApprovalNotice.vue'
-import SignedInWelcome from '@/components/home/SignedInWelcome.vue'
+import SignedInDashboard from '@/components/home/SignedInDashboard.vue'
 import SignedOutHero from '@/components/home/SignedOutHero.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import PageLoadingSpinner from '@/components/layout/PageLoadingSpinner.vue'
@@ -45,7 +45,7 @@ const visibleHomeScreen = computed<HomeScreen>(() => {
 </script>
 
 <template>
-  <PageContainer class="flex-1 justify-center">
+  <PageContainer class="flex-1" :class="{ 'justify-center': visibleHomeScreen !== 'approved' }">
     <PageTransition>
       <PageLoadingSpinner
         v-if="visibleHomeScreen === 'loading'"
@@ -56,7 +56,7 @@ const visibleHomeScreen = computed<HomeScreen>(() => {
       <AccountDeactivatedNotice v-else-if="visibleHomeScreen === 'deactivated'" />
       <PendingApprovalNotice v-else-if="visibleHomeScreen === 'pending'" />
       <AccessDeniedNotice v-else-if="visibleHomeScreen === 'denied'" />
-      <SignedInWelcome v-else />
+      <SignedInDashboard v-else />
     </PageTransition>
   </PageContainer>
 </template>

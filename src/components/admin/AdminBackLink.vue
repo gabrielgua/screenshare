@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter, type RouteLocationRaw } from 'vue-router'
 import BaseButton from '@/components/button/BaseButton.vue'
 import { ArrowLeftIcon } from '@/theme/app-icons'
+
+interface AdminBackLinkProps {
+  destination: RouteLocationRaw
+  label: string
+}
+
+const props = defineProps<AdminBackLinkProps>()
 
 const router = useRouter()
 
 function handleBackButtonClick() {
-  router.push({ name: 'admin-users' })
+  router.push(props.destination)
 }
 </script>
 
@@ -19,6 +26,6 @@ function handleBackButtonClick() {
     class="-ml-2 self-start"
     @click="handleBackButtonClick"
   >
-    All users
+    {{ label }}
   </BaseButton>
 </template>

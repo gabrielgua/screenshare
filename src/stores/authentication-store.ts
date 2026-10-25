@@ -46,7 +46,7 @@ export const useAuthenticationStore = defineStore('authentication', () => {
     signInErrorMessage.value = undefined
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'discord',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.href },
     })
     if (error) {
       signInErrorMessage.value = error.message

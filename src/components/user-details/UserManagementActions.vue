@@ -17,8 +17,8 @@ import {
   type AppIcon,
 } from '@/theme/app-icons'
 import type { ColorVariant } from '@/theme/color-variants'
-import UserDetailsSection from './UserDetailsSection.vue'
-import UserManagementActionRow from './UserManagementActionRow.vue'
+import AdminDetailsSection from '@/components/admin/AdminDetailsSection.vue'
+import AdminDetailsActionRow from '@/components/admin/AdminDetailsActionRow.vue'
 
 export type UserManagementAction = 'activate' | 'deactivate' | 'make-admin' | 'remove-admin'
 
@@ -166,11 +166,11 @@ function handleApprovalsButtonClick() {
 </script>
 
 <template>
-  <UserDetailsSection title="Actions">
+  <AdminDetailsSection title="Actions">
     <BaseText v-if="isCurrentUser" size="sm" tone="muted">
       You can't change your own account. Ask another admin if you need a change.
     </BaseText>
-    <UserManagementActionRow
+    <AdminDetailsActionRow
       v-else-if="isPendingApproval"
       title="Waiting for approval"
       description="Approve or deny this user before managing their account."
@@ -184,9 +184,9 @@ function handleApprovalsButtonClick() {
       >
         Go to approvals
       </BaseButton>
-    </UserManagementActionRow>
+    </AdminDetailsActionRow>
     <div v-else class="flex flex-col gap-4">
-      <UserManagementActionRow title="Admin role" :description="roleActionDescription">
+      <AdminDetailsActionRow title="Admin role" :description="roleActionDescription">
         <BaseButton
           variant="neutral"
           appearance="outlined"
@@ -197,8 +197,8 @@ function handleApprovalsButtonClick() {
         >
           {{ copyByAction[roleAction].confirmLabel }}
         </BaseButton>
-      </UserManagementActionRow>
-      <UserManagementActionRow title="Account access" :description="activationActionDescription">
+      </AdminDetailsActionRow>
+      <AdminDetailsActionRow title="Account access" :description="activationActionDescription">
         <BaseButton
           :variant="variantByAction[activationAction]"
           :leading-icon="iconByAction[activationAction]"
@@ -207,9 +207,9 @@ function handleApprovalsButtonClick() {
         >
           {{ copyByAction[activationAction].confirmLabel }}
         </BaseButton>
-      </UserManagementActionRow>
+      </AdminDetailsActionRow>
     </div>
-  </UserDetailsSection>
+  </AdminDetailsSection>
 
   <ConfirmActionModal
     v-model:open="isConfirmModalOpen"

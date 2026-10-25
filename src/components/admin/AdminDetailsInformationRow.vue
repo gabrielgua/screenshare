@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import BaseText from '@/components/typography/BaseText.vue'
 
-interface UserDetailsInformationRowProps {
+interface AdminDetailsInformationRowProps {
   label: string
 }
 
-defineProps<UserDetailsInformationRowProps>()
+defineProps<AdminDetailsInformationRowProps>()
 </script>
 
 <template>

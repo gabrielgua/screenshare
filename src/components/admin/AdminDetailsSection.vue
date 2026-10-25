@@ -3,12 +3,12 @@ import BaseCard from '@/components/surface/BaseCard.vue'
 import BaseHeading from '@/components/typography/BaseHeading.vue'
 import BaseText from '@/components/typography/BaseText.vue'
 
-interface UserDetailsSectionProps {
+interface AdminDetailsSectionProps {
   title: string
   description?: string
 }
 
-withDefaults(defineProps<UserDetailsSectionProps>(), {
+withDefaults(defineProps<AdminDetailsSectionProps>(), {
   description: undefined,
 })
 </script>
