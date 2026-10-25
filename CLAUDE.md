@@ -78,7 +78,8 @@ src/
     app-icons.ts           Every icon the app uses, under a descriptive name
   components/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton)
-    form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea
+    form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea,
+                           BaseSwitch (labelled on and off switch bound with v-model)
     icon/                  BaseIcon, BaseSpinner, BaseIconCircle
     surface/               BaseCard (padding none, compact or comfortable), BaseLinkCard (a card
                            that links somewhere, with a leading slot and an arrow)
@@ -95,6 +96,7 @@ src/
                            height and scrolls its content. The panel slides up in 200ms with
                            ease-out and no bounce, and the content bounces in after 200ms.
     tabs/                  BaseTabs (generic segmented tabs bound with v-model)
+    toast/                 BaseToast and ToastViewport (mounted once in App.vue)
     feedback/              ActionFeedbackModal, ConfirmActionModal, AutoCloseCountdownBar,
                            LoadErrorRetry, NoMatchingResults
     admin/                 Admin layout pieces: AdminPanelLink, AdminNavigation and its tabs,
@@ -134,6 +136,7 @@ src/
                            use-room-presence.ts (who is in a room right now) and
                            use-requested-room-presence.ts (the same for the room store's room,
                            reloading members when someone new appears)
+  audio/                   notification-sounds.ts: short chimes generated with the Web Audio API
   services/                supabase-client.ts and *-service.ts files that talk to Supabase
   formatting/              Pure display formatters, like date-time.ts and member-count.ts
   stores/                  *-store.ts Pinia stores
@@ -144,6 +147,9 @@ src/
                            user-details-store.ts owns the user shown on the admin user page
                            and its role and activation actions
                            action-feedback-store.ts owns the success and error modal
+                           toast-store.ts owns the toasts shown by ToastViewport
+                           room-notification-preferences-store.ts owns each user's join and
+                           leave notification choices
                            my-rooms-store.ts owns the signed in user's rooms and creation
                            room-presence-store.ts owns one Realtime presence channel per room,
                            shared by every component watching it
@@ -245,9 +251,17 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   `public.room_members` (room, user, joined time). Rooms persist forever.
 - **Rules:** members can own one room, admins can own any number. Creating a room adds the owner
   as its first member. The owner or any admin can rename a room and remove members. The owner
-  can never be removed or leave their own room. Anyone else can leave, and can join again with the
+  can never be removed or quit their own room. Anyone else can quit, which ends their
+  membership (the button says Quit room so it is not mistaken for going back home), and can join again with the
   link. Users can join as many rooms as they want. Rooms are never deleted, only renamed.
-- **Blocking:** removing a member also adds them to `public.room_blocked_users`, with who blocked
+- **Kicking:** the owner or any admin can kick a member who is in the room right now with
+  `public.kick_room_member`. Kicking sends the member home with an explanation and keeps their
+  membership, so they can come back. The function sends a `room-member-kicked` broadcast to
+  the room's presence channel from the database with `realtime.send`. Clients can never send
+  broadcasts, so nobody can fake a kick. `room-presence-store.ts` exposes the kick aimed at the
+  current user as `latestKickNotice`, and `useRoomKickRedirect` on the room page acts on it.
+- **Blocking:** blocking a member (`remove_room_member`) removes their membership, kicks them
+  out of the room live with the reason `blocked`, and adds them to `public.room_blocked_users`, with who blocked
   them and when. Blocked users see a notice instead of the invitation, and `join_room` refuses
   them. The owner or any admin can unblock them, which lets them join again with the link but
   does not add them back.
@@ -270,6 +284,22 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   the existing channel for a topic, which is why `room-presence-store.ts` counts watchers instead
   of letting components open channels themselves. Presence payloads come from the client, and a
   removed member who keeps the page open stays visible until they leave it.
+- **Room details panel:** the sidebar and the phone drawer's Room tab show, top to bottom, the
+  share and manage buttons, Here now (with a kick button next to each person for managers),
+  Notifications, and Membership with Quit room for members who are not the owner.
+  Notifications and Membership are `RoomCollapsibleSection`s, closed on every visit and pinned to
+  the bottom. Inside Here now only the list scrolls, while its heading stays put. That works because routes
+  with `meta.usesFullWidthLayout` pin `App.vue` to the window height (`lg:h-dvh`) on large
+  screens, so the height limit reaches the sidebar instead of the page growing.
+- **Join and leave notifications:** `useRoomArrivalNotifications` on the room page compares who
+  is present before and after every presence update and shows a toast and plays a chime for
+  each arrival and departure. It ignores your own changes, and it treats the first two seconds
+  after you appear as the room's starting state, because presence can arrive in pieces. Admins
+  watching from the admin pages get no notifications. Each user can turn the toasts and the sound
+  off separately with the switches in the room's details panel. The choice is stored per user in
+  local storage by `room-notification-preferences-store.ts`, so it applies to that device only.
+  Keep shared preferences in a Pinia store: separate `useLocalStorage` copies of the same key
+  drift apart.
 - **Links while signed out:** Discord sign in returns to the page it started from, so a shared
   room link survives sign in. The Supabase config allows `http://localhost:5173/**` as a
   redirect for that. Add the production address with `/**` once deployed.
@@ -320,6 +350,11 @@ Defined in `src/theme/theme.css` with Tailwind v4 `@theme`. Use them as normal T
   2px low. Before switching fonts, measure the new font's offset in Chrome.
 - **Radii:** `rounded-control` for buttons and inputs, `rounded-card` for panels.
 - **Shadows:** `shadow-card` for raised surfaces.
+- **Scrollbars:** `scrollbar-thin-on-hover` (an `@utility` in `theme.css`) gives a scroll area a
+  thin scrollbar that is transparent until the pointer is over it. Use it on lists that scroll
+  inside a panel, like Here now. Pair it with `scrollbar-gutter-stable` so the content does not
+  shift when the scrollbar appears, or with `scrollbar-gutter-balanced` to keep centered content
+  centered. Both sidebar lists stretch to the card's right edge so the scrollbar sits against it.
 - **Motion:** `ease-bounce` is the overshooting curve every entering animation uses.
   `animate-pop-in` pops an element in with that curve. `animate-shrink-to-start` shrinks a bar
   to its left edge, with the duration set per use through `animation-duration`.
@@ -359,7 +394,9 @@ actionFeedbackStore.showErrorFeedback('Could not save this review', describeErro
 ```
 
 The modal is mounted once in `App.vue`. Success closes itself after 2.5 seconds and errors after
-4.5 seconds, with a countdown bar. Pass `{ shouldAutoClose: false }` as the third argument when
+4.5 seconds, with a countdown bar. Short, non blocking notices like someone joining a room
+use `useToastStore().showToast()` instead: toasts sit at the top center on desktop and the
+bottom on phones, and close themselves after 4 seconds. Pass `{ shouldAutoClose: false }` as the third argument when
 the reader needs time, like a link to copy by hand: the bar is replaced by a Close button. Turn unknown errors into text with `describeError` from
 `src/services/describe-error.ts`.
 

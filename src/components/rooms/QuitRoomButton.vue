@@ -8,42 +8,42 @@ import { useActionFeedbackStore } from '@/stores/action-feedback-store'
 import { useRoomStore } from '@/stores/room-store'
 import { LeaveRoomIcon } from '@/theme/app-icons'
 
-interface LeaveRoomButtonProps {
+interface QuitRoomButtonProps {
   roomName: string
 }
 
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<LeaveRoomButtonProps>()
+const props = defineProps<QuitRoomButtonProps>()
 
 const router = useRouter()
 const roomStore = useRoomStore()
 const actionFeedbackStore = useActionFeedbackStore()
 
-const isLeaveModalOpen = ref(false)
-const isLeavingRoom = ref(false)
+const isQuitModalOpen = ref(false)
+const isQuittingRoom = ref(false)
 
-function handleLeaveButtonClick() {
-  isLeaveModalOpen.value = true
+function handleQuitButtonClick() {
+  isQuitModalOpen.value = true
 }
 
-async function handleLeaveConfirmed() {
-  isLeavingRoom.value = true
+async function handleQuitConfirmed() {
+  isQuittingRoom.value = true
   try {
     await roomStore.leaveRequestedRoom()
-    isLeaveModalOpen.value = false
+    isQuitModalOpen.value = false
     actionFeedbackStore.showSuccessFeedback(
-      `You left ${props.roomName}`,
-      'Open the room link again whenever you want to come back.',
+      `You quit ${props.roomName}`,
+      'It is no longer in your rooms. Open the room link again to join it.',
     )
     router.push({ name: 'home' })
-  } catch (leaveError) {
+  } catch (quitError) {
     actionFeedbackStore.showErrorFeedback(
-      'Could not leave the room',
-      describeError(leaveError, 'Something went wrong. Please try again.'),
+      'Could not quit the room',
+      describeError(quitError, 'Something went wrong. Please try again.'),
     )
   } finally {
-    isLeavingRoom.value = false
+    isQuittingRoom.value = false
   }
 }
 </script>
@@ -54,18 +54,18 @@ async function handleLeaveConfirmed() {
     variant="danger"
     appearance="outlined"
     :leading-icon="LeaveRoomIcon"
-    @click="handleLeaveButtonClick"
+    @click="handleQuitButtonClick"
   >
-    Leave room
+    Quit room
   </BaseButton>
   <ConfirmActionModal
-    v-model:open="isLeaveModalOpen"
-    :title="`Leave ${roomName}?`"
-    description="It will disappear from your rooms. You can come back any time with the room link."
-    confirm-label="Leave room"
+    v-model:open="isQuitModalOpen"
+    :title="`Quit ${roomName}?`"
+    description="You stop being a member and the room disappears from your rooms. You can join again later with the room link."
+    confirm-label="Quit room"
     :icon="LeaveRoomIcon"
     variant="danger"
-    :is-submitting="isLeavingRoom"
-    @confirmed="handleLeaveConfirmed"
+    :is-submitting="isQuittingRoom"
+    @confirmed="handleQuitConfirmed"
   />
 </template>

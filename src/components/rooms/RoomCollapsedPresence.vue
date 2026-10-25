@@ -13,13 +13,13 @@ defineProps<RoomCollapsedPresenceProps>()
 
 <template>
   <section
-    class="flex min-h-0 flex-1 flex-col items-center gap-3"
+    class="flex min-h-0 flex-1 flex-col items-center gap-3 self-stretch"
     :aria-label="`${presentUsers.length} here now`"
   >
     <BaseText size="caption" weight="semibold" tone="success">{{ presentUsers.length }}</BaseText>
     <StaggeredListTransition
       tag="ul"
-      class="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-x-hidden overflow-y-auto px-1 pb-1"
+      class="scrollbar-thin-on-hover scrollbar-gutter-balanced flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-x-hidden overflow-y-auto pb-1"
     >
       <li
         v-for="(presentUser, listPosition) in presentUsers"

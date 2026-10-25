@@ -287,3 +287,13 @@ export async function unblockRoomUser(roomId: string, blockedUserId: string): Pr
     throw error
   }
 }
+
+export async function kickRoomMember(roomId: string, memberUserId: string): Promise<void> {
+  const { error } = await supabaseClient.rpc('kick_room_member', {
+    target_room_id: roomId,
+    target_user_id: memberUserId,
+  })
+  if (error) {
+    throw error
+  }
+}

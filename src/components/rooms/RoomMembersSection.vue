@@ -7,7 +7,7 @@ import type { RoomMember } from '@/services/rooms-service'
 import { useActionFeedbackStore } from '@/stores/action-feedback-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRoomStore } from '@/stores/room-store'
-import { RemoveRoomMemberIcon } from '@/theme/app-icons'
+import { RoomBlockedUserIcon } from '@/theme/app-icons'
 import RoomMemberCard from './RoomMemberCard.vue'
 import RoomSectionHeading from './RoomSectionHeading.vue'
 
@@ -23,47 +23,47 @@ const roomStore = useRoomStore()
 const currentUserStore = useCurrentUserStore()
 const actionFeedbackStore = useActionFeedbackStore()
 
-const isRemoveModalOpen = ref(false)
-const memberBeingRemoved = ref<RoomMember>()
-const isRemovingMember = ref(false)
+const isBlockModalOpen = ref(false)
+const memberBeingBlocked = ref<RoomMember>()
+const isBlockingMember = ref(false)
 
-const memberBeingRemovedName = computed(
-  () => memberBeingRemoved.value?.displayName ?? 'this member',
+const memberBeingBlockedName = computed(
+  () => memberBeingBlocked.value?.displayName ?? 'this member',
 )
 
 function isCurrentUser(roomMember: RoomMember): boolean {
   return roomMember.userId === currentUserStore.currentUser?.id
 }
 
-function canRemove(roomMember: RoomMember): boolean {
+function canManage(roomMember: RoomMember): boolean {
   return roomStore.canManageRoom && !roomMember.isOwner && !isCurrentUser(roomMember)
 }
 
-function openRemoveModal(roomMember: RoomMember) {
-  memberBeingRemoved.value = roomMember
-  isRemoveModalOpen.value = true
+function openBlockModal(roomMember: RoomMember) {
+  memberBeingBlocked.value = roomMember
+  isBlockModalOpen.value = true
 }
 
-async function handleRemoveConfirmed() {
-  const removedMember = memberBeingRemoved.value
-  if (!removedMember) {
+async function handleBlockConfirmed() {
+  const blockedMember = memberBeingBlocked.value
+  if (!blockedMember) {
     return
   }
-  isRemovingMember.value = true
+  isBlockingMember.value = true
   try {
-    await roomStore.removeMemberFromRequestedRoom(removedMember.userId)
-    isRemoveModalOpen.value = false
+    await roomStore.removeMemberFromRequestedRoom(blockedMember.userId)
+    isBlockModalOpen.value = false
     actionFeedbackStore.showSuccessFeedback(
-      `${removedMember.displayName} was removed`,
-      'They are blocked from this room until someone unblocks them.',
+      `${blockedMember.displayName} was blocked`,
+      'They were sent out of the room and cannot join again until someone unblocks them.',
     )
-  } catch (removeError) {
+  } catch (blockError) {
     actionFeedbackStore.showErrorFeedback(
-      'Could not remove this member',
-      describeError(removeError, 'Something went wrong. Please try again.'),
+      'Could not block this member',
+      describeError(blockError, 'Something went wrong. Please try again.'),
     )
   } finally {
-    isRemovingMember.value = false
+    isBlockingMember.value = false
   }
 }
 </script>
@@ -81,22 +81,22 @@ async function handleRemoveConfirmed() {
         <RoomMemberCard
           :room-member="roomMember"
           :is-current-user="isCurrentUser(roomMember)"
-          :can-be-removed="canRemove(roomMember)"
+          :can-be-managed="canManage(roomMember)"
           :is-present="props.presentUserIds.includes(roomMember.userId)"
-          @removal-requested="openRemoveModal(roomMember)"
+          @block-requested="openBlockModal(roomMember)"
         />
       </li>
     </StaggeredListTransition>
 
     <ConfirmActionModal
-      v-model:open="isRemoveModalOpen"
-      :title="`Remove ${memberBeingRemovedName}?`"
-      description="They leave this room right away and cannot join again, even with the link, until they are unblocked."
-      confirm-label="Remove"
-      :icon="RemoveRoomMemberIcon"
+      v-model:open="isBlockModalOpen"
+      :title="`Block ${memberBeingBlockedName}?`"
+      description="They are sent out of the room right away, lose their membership and cannot join again, even with the link, until they are unblocked."
+      confirm-label="Block"
+      :icon="RoomBlockedUserIcon"
       variant="danger"
-      :is-submitting="isRemovingMember"
-      @confirmed="handleRemoveConfirmed"
+      :is-submitting="isBlockingMember"
+      @confirmed="handleBlockConfirmed"
     />
   </section>
 </template>

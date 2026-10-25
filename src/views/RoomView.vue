@@ -12,6 +12,8 @@ import RoomSidebar from '@/components/rooms/RoomSidebar.vue'
 import RoomStagePlaceholder from '@/components/rooms/RoomStagePlaceholder.vue'
 import RoomUnavailableNotice from '@/components/rooms/RoomUnavailableNotice.vue'
 import { useRequestedRoomPresence } from '@/composables/use-requested-room-presence'
+import { useRoomArrivalNotifications } from '@/composables/use-room-arrival-notifications'
+import { useRoomKickRedirect } from '@/composables/use-room-kick-redirect'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRoomStore } from '@/stores/room-store'
@@ -34,6 +36,15 @@ const roomStore = useRoomStore()
 
 const requestedRoomId = computed(() => String(route.params.roomId))
 const { presentUsers, presentUserIds } = useRequestedRoomPresence(() => roomStore.isRoomMember)
+useRoomArrivalNotifications(
+  presentUsers,
+  () => roomStore.room?.id,
+  () => roomStore.room?.name,
+)
+useRoomKickRedirect(
+  () => roomStore.room?.id,
+  () => roomStore.room?.name,
+)
 
 const visibleRoomPageScreen = computed<RoomPageScreen>(() => {
   if (authenticationStore.isRestoringSession) {

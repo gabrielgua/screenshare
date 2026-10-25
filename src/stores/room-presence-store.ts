@@ -9,6 +9,19 @@ import {
 } from '@/services/room-presence-service'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 
+export type RoomKickReason = 'kicked' | 'blocked'
+
+export interface RoomKickNotice {
+  roomId: string
+  reason: RoomKickReason
+  receivedAt: number
+}
+
+interface RoomKickPayload {
+  userId?: string
+  reason?: RoomKickReason
+}
+
 interface RoomPresenceSubscription {
   watcherCount: number
   channel?: RealtimeChannel
@@ -21,6 +34,7 @@ export const useRoomPresenceStore = defineStore('room-presence', () => {
 
   const presentUsersByRoomId = ref<Record<string, PresentRoomUser[]>>({})
   const subscriptionsByRoomId = new Map<string, RoomPresenceSubscription>()
+  const latestKickNotice = ref<RoomKickNotice>()
 
   function updatePresentUsers(roomId: string, presentUsers: PresentRoomUser[]) {
     presentUsersByRoomId.value = { ...presentUsersByRoomId.value, [roomId]: presentUsers }
@@ -45,6 +59,16 @@ export const useRoomPresenceStore = defineStore('room-presence', () => {
     subscription.channel = channel
     channel.on('presence', { event: 'sync' }, () => {
       updatePresentUsers(roomId, readPresentRoomUsers(channel))
+    })
+    channel.on('broadcast', { event: 'room-member-kicked' }, ({ payload }) => {
+      const kickPayload = payload as RoomKickPayload
+      if (kickPayload.userId && kickPayload.userId === currentUserStore.currentUser?.id) {
+        latestKickNotice.value = {
+          roomId,
+          reason: kickPayload.reason ?? 'kicked',
+          receivedAt: Date.now(),
+        }
+      }
     })
     channel.subscribe((subscriptionStatus) => {
       subscription.isSubscribed = subscriptionStatus === 'SUBSCRIBED'
@@ -111,6 +135,7 @@ export const useRoomPresenceStore = defineStore('room-presence', () => {
 
   return {
     presentUsersByRoomId,
+    latestKickNotice,
     watchRoomPresence,
     stopWatchingRoomPresence,
     shareOwnPresence,

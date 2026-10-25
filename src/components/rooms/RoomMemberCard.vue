@@ -5,30 +5,31 @@ import BaseIconButton from '@/components/button/BaseIconButton.vue'
 import BaseCard from '@/components/surface/BaseCard.vue'
 import BaseText from '@/components/typography/BaseText.vue'
 import type { RoomMember } from '@/services/rooms-service'
-import { RemoveRoomMemberIcon, RoomOwnerIcon } from '@/theme/app-icons'
+import { RoomBlockedUserIcon, RoomOwnerIcon } from '@/theme/app-icons'
+import KickRoomMemberButton from './KickRoomMemberButton.vue'
 import RoomPresenceAvatar from './RoomPresenceAvatar.vue'
 
 interface RoomMemberCardProps {
   roomMember: RoomMember
   isCurrentUser?: boolean
-  canBeRemoved?: boolean
+  canBeManaged?: boolean
   isPresent?: boolean
 }
 
 const props = withDefaults(defineProps<RoomMemberCardProps>(), {
   isCurrentUser: false,
-  canBeRemoved: false,
+  canBeManaged: false,
   isPresent: false,
 })
 
 const emit = defineEmits<{
-  removalRequested: []
+  blockRequested: []
 }>()
 
 const timeSinceJoining = useTimeAgo(() => props.roomMember.joinedAt)
 
-function handleRemoveButtonClick() {
-  emit('removalRequested')
+function handleBlockButtonClick() {
+  emit('blockRequested')
 }
 </script>
 
@@ -52,13 +53,20 @@ function handleRemoveButtonClick() {
       <BaseText v-if="isPresent" size="caption" weight="medium" tone="success">Here now</BaseText>
       <BaseText v-else size="caption" tone="subtle">Joined {{ timeSinceJoining }}</BaseText>
     </div>
-    <BaseIconButton
-      v-if="canBeRemoved"
-      :icon="RemoveRoomMemberIcon"
-      :accessible-label="`Remove ${roomMember.displayName} from the room`"
-      variant="danger"
-      appearance="ghost"
-      @click="handleRemoveButtonClick"
-    />
+    <div v-if="canBeManaged" class="flex shrink-0 items-center gap-1">
+      <KickRoomMemberButton
+        v-if="isPresent"
+        :member-user-id="roomMember.userId"
+        :member-name="roomMember.displayName"
+      />
+      <BaseIconButton
+        :icon="RoomBlockedUserIcon"
+        :accessible-label="`Block ${roomMember.displayName}`"
+        variant="danger"
+        appearance="ghost"
+        size="sm"
+        @click="handleBlockButtonClick"
+      />
+    </div>
   </BaseCard>
 </template>

@@ -8,6 +8,7 @@ import {
   fetchRoomPreview,
   isValidRoomId,
   joinRoom,
+  kickRoomMember,
   leaveRoom,
   removeRoomMember,
   renameRoom,
@@ -164,6 +165,12 @@ export const useRoomStore = defineStore('room', () => {
     await loadRoomBlockedUsers(requestedRoomId.value)
   }
 
+  async function kickMemberFromRequestedRoom(memberUserId: string) {
+    if (requestedRoomId.value) {
+      await kickRoomMember(requestedRoomId.value, memberUserId)
+    }
+  }
+
   async function unblockUserFromRequestedRoom(blockedUserId: string) {
     if (!requestedRoomId.value) {
       return
@@ -192,5 +199,6 @@ export const useRoomStore = defineStore('room', () => {
     renameRequestedRoom,
     removeMemberFromRequestedRoom,
     unblockUserFromRequestedRoom,
+    kickMemberFromRequestedRoom,
   }
 })

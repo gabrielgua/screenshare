@@ -3,17 +3,20 @@ import BaseIcon from '@/components/icon/BaseIcon.vue'
 import BaseText from '@/components/typography/BaseText.vue'
 import type { PresentRoomUser } from '@/services/room-presence-service'
 import { RoomOwnerIcon } from '@/theme/app-icons'
+import KickRoomMemberButton from './KickRoomMemberButton.vue'
 import RoomPresenceAvatar from './RoomPresenceAvatar.vue'
 
 interface RoomPresentUserRowProps {
   presentUser: PresentRoomUser
   isCurrentUser?: boolean
   isRoomOwner?: boolean
+  canBeKicked?: boolean
 }
 
 withDefaults(defineProps<RoomPresentUserRowProps>(), {
   isCurrentUser: false,
   isRoomOwner: false,
+  canBeKicked: false,
 })
 </script>
 
@@ -35,6 +38,12 @@ withDefaults(defineProps<RoomPresentUserRowProps>(), {
       size="sm"
       class="shrink-0 text-brand-600 dark:text-brand-300"
       aria-label="Room owner"
+    />
+    <KickRoomMemberButton
+      v-if="canBeKicked"
+      :member-user-id="presentUser.userId"
+      :member-name="presentUser.displayName"
+      class="-my-1 shrink-0"
     />
   </div>
 </template>
