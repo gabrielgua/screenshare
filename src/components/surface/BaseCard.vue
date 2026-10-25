@@ -2,7 +2,7 @@
 export type CardPadding = 'none' | 'compact' | 'comfortable'
 
 interface BaseCardProps {
-  as?: 'div' | 'section' | 'article'
+  as?: 'div' | 'section' | 'article' | 'aside'
   padding?: CardPadding
 }
 

@@ -11,6 +11,14 @@ import { RemoveRoomMemberIcon } from '@/theme/app-icons'
 import RoomMemberCard from './RoomMemberCard.vue'
 import RoomSectionHeading from './RoomSectionHeading.vue'
 
+interface RoomMembersSectionProps {
+  presentUserIds?: string[]
+}
+
+const props = withDefaults(defineProps<RoomMembersSectionProps>(), {
+  presentUserIds: () => [],
+})
+
 const roomStore = useRoomStore()
 const currentUserStore = useCurrentUserStore()
 const actionFeedbackStore = useActionFeedbackStore()
@@ -61,18 +69,20 @@ async function handleRemoveConfirmed() {
 </script>
 
 <template>
-  <section class="flex flex-col gap-3">
-    <RoomSectionHeading title="In this room" :count="roomStore.roomMembers.length" />
-    <StaggeredListTransition tag="ul" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  <section class="@container flex flex-col gap-3">
+    <RoomSectionHeading title="Members" :count="roomStore.roomMembers.length" />
+    <StaggeredListTransition tag="ul" class="grid gap-3 @lg:grid-cols-2 @4xl:grid-cols-3">
       <li
         v-for="(roomMember, listPosition) in roomStore.roomMembers"
         :key="roomMember.userId"
         :data-stagger-index="listPosition"
+        class="min-w-0"
       >
         <RoomMemberCard
           :room-member="roomMember"
           :is-current-user="isCurrentUser(roomMember)"
           :can-be-removed="canRemove(roomMember)"
+          :is-present="props.presentUserIds.includes(roomMember.userId)"
           @removal-requested="openRemoveModal(roomMember)"
         />
       </li>

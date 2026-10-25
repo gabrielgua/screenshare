@@ -5,14 +5,16 @@ import { ShareScreenIcon } from '@/theme/app-icons'
 </script>
 
 <template>
-  <section
-    aria-label="Screen sharing"
-    class="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-neutral-300 bg-neutral-100 p-6 text-center dark:border-neutral-700 dark:bg-neutral-900"
-  >
-    <BaseIconCircle :icon="ShareScreenIcon" size="lg" />
-    <BaseText weight="semibold">Screen sharing is coming soon</BaseText>
-    <BaseText size="sm" tone="muted" class="max-w-sm">
-      Shared screens will show up here, with sound controls for each one.
-    </BaseText>
-  </section>
+  <div class="flex min-w-0 flex-1 flex-col justify-center lg:min-h-0">
+    <section
+      aria-label="Screen sharing"
+      class="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed border-neutral-300 bg-neutral-100 p-6 text-center dark:border-neutral-700 dark:bg-neutral-900 lg:aspect-auto lg:min-h-96 lg:flex-1"
+    >
+      <BaseIconCircle :icon="ShareScreenIcon" size="lg" />
+      <BaseText weight="semibold">Screen sharing is coming soon</BaseText>
+      <BaseText size="sm" tone="muted" class="max-w-sm">
+        Shared screens will show up here, with sound controls for each one.
+      </BaseText>
+    </section>
+  </div>
 </template>

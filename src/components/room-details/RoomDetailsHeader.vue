@@ -3,10 +3,12 @@ import { useRouter } from 'vue-router'
 import BaseAvatar from '@/components/avatar/BaseAvatar.vue'
 import BaseButton from '@/components/button/BaseButton.vue'
 import BaseIconCircle from '@/components/icon/BaseIconCircle.vue'
+import RoomLivePresence from '@/components/rooms/RoomLivePresence.vue'
 import ShareRoomLinkButton from '@/components/rooms/ShareRoomLinkButton.vue'
 import BaseCard from '@/components/surface/BaseCard.vue'
 import BaseHeading from '@/components/typography/BaseHeading.vue'
 import BaseText from '@/components/typography/BaseText.vue'
+import type { PresentRoomUser } from '@/services/room-presence-service'
 import { RedirectLinkIcon, RoomIcon } from '@/theme/app-icons'
 
 interface RoomDetailsHeaderProps {
@@ -14,10 +16,12 @@ interface RoomDetailsHeaderProps {
   roomName: string
   ownerName: string
   ownerAvatarUrl?: string
+  presentUsers?: PresentRoomUser[]
 }
 
 const props = withDefaults(defineProps<RoomDetailsHeaderProps>(), {
   ownerAvatarUrl: undefined,
+  presentUsers: () => [],
 })
 
 const router = useRouter()
@@ -41,6 +45,7 @@ function handleOpenRoomButtonClick() {
           <BaseAvatar :name="ownerName" :image-url="ownerAvatarUrl" size="sm" />
           <BaseText size="sm" tone="muted">Created by {{ ownerName }}</BaseText>
         </div>
+        <RoomLivePresence :present-users="presentUsers" />
       </div>
     </div>
     <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">

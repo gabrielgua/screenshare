@@ -50,7 +50,7 @@ async function handleUnblockConfirmed() {
 </script>
 
 <template>
-  <section class="flex flex-col gap-3">
+  <section class="@container flex flex-col gap-3">
     <RoomSectionHeading
       title="Blocked"
       :count="roomStore.roomBlockedUsers.length"
@@ -64,11 +64,12 @@ async function handleUnblockConfirmed() {
     >
       Nobody is blocked from this room.
     </BaseText>
-    <StaggeredListTransition v-else tag="ul" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <StaggeredListTransition v-else tag="ul" class="grid gap-3 @lg:grid-cols-2 @4xl:grid-cols-3">
       <li
         v-for="(roomBlockedUser, listPosition) in roomStore.roomBlockedUsers"
         :key="roomBlockedUser.userId"
         :data-stagger-index="listPosition"
+        class="min-w-0"
       >
         <RoomBlockedUserCard
           :room-blocked-user="roomBlockedUser"

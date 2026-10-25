@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { useNativeDialog } from '@/composables/use-native-dialog'
 
-export type ModalWidth = 'compact' | 'regular'
+export type ModalWidth = 'compact' | 'regular' | 'wide'
 
 interface BaseModalProps {
   width?: ModalWidth
@@ -14,44 +14,16 @@ const props = withDefaults(defineProps<BaseModalProps>(), {
 })
 
 const isOpen = defineModel<boolean>('open', { default: false })
-const dialogElement = ref<HTMLDialogElement>()
+
+const { dialogElement, closeDialog, handleNativeCancel, handleBackdropClick } = useNativeDialog(
+  isOpen,
+  () => props.isCloseBlocked,
+)
 
 const widthClassesByWidth: Record<ModalWidth, string> = {
   compact: 'max-w-sm',
   regular: 'max-w-md',
-}
-
-watch(
-  [isOpen, dialogElement],
-  ([shouldBeOpen, element]) => {
-    if (!element) {
-      return
-    }
-    if (shouldBeOpen && !element.open) {
-      element.showModal()
-    }
-    if (!shouldBeOpen && element.open) {
-      element.close()
-    }
-  },
-  { immediate: true },
-)
-
-function closeModal() {
-  if (!props.isCloseBlocked) {
-    isOpen.value = false
-  }
-}
-
-function handleNativeCancel(cancelEvent: Event) {
-  cancelEvent.preventDefault()
-  closeModal()
-}
-
-function handleBackdropClick(clickEvent: MouseEvent) {
-  if (clickEvent.target === dialogElement.value) {
-    closeModal()
-  }
+  wide: 'max-w-2xl',
 }
 </script>
 
@@ -63,6 +35,6 @@ function handleBackdropClick(clickEvent: MouseEvent) {
     @cancel="handleNativeCancel"
     @click="handleBackdropClick"
   >
-    <slot :close-modal="closeModal" />
+    <slot :close-modal="closeDialog" />
   </dialog>
 </template>

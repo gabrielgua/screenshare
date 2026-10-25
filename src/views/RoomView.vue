@@ -6,12 +6,12 @@ import LoadErrorRetry from '@/components/feedback/LoadErrorRetry.vue'
 import PageContainer from '@/components/layout/PageContainer.vue'
 import PageLoadingSpinner from '@/components/layout/PageLoadingSpinner.vue'
 import PageTransition from '@/components/layout/PageTransition.vue'
-import RoomHeader from '@/components/rooms/RoomHeader.vue'
+import RoomCompactBar from '@/components/rooms/RoomCompactBar.vue'
 import RoomInvitation from '@/components/rooms/RoomInvitation.vue'
-import RoomBlockedUsersSection from '@/components/rooms/RoomBlockedUsersSection.vue'
-import RoomMembersSection from '@/components/rooms/RoomMembersSection.vue'
+import RoomSidebar from '@/components/rooms/RoomSidebar.vue'
 import RoomStagePlaceholder from '@/components/rooms/RoomStagePlaceholder.vue'
 import RoomUnavailableNotice from '@/components/rooms/RoomUnavailableNotice.vue'
+import { useRequestedRoomPresence } from '@/composables/use-requested-room-presence'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRoomStore } from '@/stores/room-store'
@@ -33,6 +33,7 @@ const currentUserStore = useCurrentUserStore()
 const roomStore = useRoomStore()
 
 const requestedRoomId = computed(() => String(route.params.roomId))
+const { presentUsers, presentUserIds } = useRequestedRoomPresence(() => roomStore.isRoomMember)
 
 const visibleRoomPageScreen = computed<RoomPageScreen>(() => {
   if (authenticationStore.isRestoringSession) {
@@ -66,7 +67,11 @@ function handleRetryRequested() {
 </script>
 
 <template>
-  <PageContainer class="flex-1" :class="{ 'justify-center': visibleRoomPageScreen !== 'room' }">
+  <PageContainer
+    :width="visibleRoomPageScreen === 'room' ? 'full' : 'regular'"
+    class="flex-1"
+    :class="visibleRoomPageScreen === 'room' ? 'lg:min-h-0' : 'justify-center'"
+  >
     <PageTransition>
       <PageLoadingSpinner
         v-if="visibleRoomPageScreen === 'loading'"
@@ -107,16 +112,19 @@ function handleRetryRequested() {
         v-else-if="visibleRoomPageScreen === 'invitation' && roomStore.roomPreview"
         :room-preview="roomStore.roomPreview"
       />
-      <div v-else-if="roomStore.room" class="flex flex-col gap-6">
-        <RoomHeader
-          :room-id="roomStore.room.id"
-          :room-name="roomStore.room.name"
+      <div v-else-if="roomStore.room" class="flex flex-1 flex-col gap-4 lg:min-h-0 lg:flex-row">
+        <RoomCompactBar
+          :room="roomStore.room"
           :owner-name="roomStore.roomPreview?.ownerName"
+          :present-users="presentUsers"
+          :present-user-ids="presentUserIds"
         />
         <RoomStagePlaceholder />
-        <RoomMembersSection />
-        <RoomBlockedUsersSection
-          v-if="roomStore.canManageRoom && roomStore.roomBlockedUsers.length > 0"
+        <RoomSidebar
+          :room="roomStore.room"
+          :owner-name="roomStore.roomPreview?.ownerName"
+          :present-users="presentUsers"
+          :present-user-ids="presentUserIds"
         />
       </div>
     </PageTransition>

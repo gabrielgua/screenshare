@@ -4,6 +4,7 @@ import { useCurrentUserStore } from '@/stores/current-user-store'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAdmin?: boolean
+    usesFullWidthLayout?: boolean
   }
 }
 
@@ -44,7 +45,12 @@ const router = createRouter({
         },
       ],
     },
-    { name: 'room', path: '/rooms/:roomId', component: () => import('@/views/RoomView.vue') },
+    {
+      name: 'room',
+      path: '/rooms/:roomId',
+      component: () => import('@/views/RoomView.vue'),
+      meta: { usesFullWidthLayout: true },
+    },
     { path: '/approvals', redirect: { name: 'admin-approvals' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

@@ -17,6 +17,6 @@ const APP_NAME = 'Screenshare'
     >
       <BaseIcon :icon="ShareScreenIcon" size="md" />
     </span>
-    <BaseText as="span" size="lg" weight="bold" class="hidden sm:inline">{{ APP_NAME }}</BaseText>
+    <BaseText as="span" size="lg" weight="bold">{{ APP_NAME }}</BaseText>
   </RouterLink>
 </template>

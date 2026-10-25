@@ -8,9 +8,12 @@ import { ApproveIcon, InviteLinkIcon } from '@/theme/app-icons'
 
 interface ShareRoomLinkButtonProps {
   roomId: string
+  isIconOnly?: boolean
 }
 
-const props = defineProps<ShareRoomLinkButtonProps>()
+const props = withDefaults(defineProps<ShareRoomLinkButtonProps>(), {
+  isIconOnly: false,
+})
 
 const COPIED_LABEL_DURATION_MILLISECONDS = 2000
 
@@ -21,12 +24,14 @@ const { copy, copied, isSupported } = useClipboard({
 })
 
 const roomShareUrl = computed(() => buildRoomShareUrl(props.roomId))
+const shareButtonLabel = computed(() => (copied.value ? 'Link copied' : 'Share link'))
 
 async function handleShareButtonClick() {
   if (!isSupported.value) {
     actionFeedbackStore.showErrorFeedback(
       'Copying is not available',
       `Copy this link by hand: ${roomShareUrl.value}`,
+      { shouldAutoClose: false },
     )
     return
   }
@@ -38,9 +43,12 @@ async function handleShareButtonClick() {
   <BaseButton
     variant="primary"
     :leading-icon="copied ? ApproveIcon : InviteLinkIcon"
+    :is-icon-only="isIconOnly"
+    :aria-label="isIconOnly ? shareButtonLabel : undefined"
+    :title="isIconOnly ? shareButtonLabel : undefined"
     aria-live="polite"
     @click="handleShareButtonClick"
   >
-    {{ copied ? 'Link copied' : 'Share link' }}
+    <template v-if="!isIconOnly">{{ shareButtonLabel }}</template>
   </BaseButton>
 </template>

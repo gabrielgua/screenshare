@@ -2,22 +2,29 @@
 import BaseIconButton from '@/components/button/BaseIconButton.vue'
 import BaseHeading from '@/components/typography/BaseHeading.vue'
 import { CloseIcon } from '@/theme/app-icons'
-import BaseModal from './BaseModal.vue'
+import BaseModal, { type ModalWidth } from './BaseModal.vue'
 
 interface BaseDialogProps {
   title: string
   isCloseBlocked?: boolean
+  width?: ModalWidth
 }
 
 withDefaults(defineProps<BaseDialogProps>(), {
   isCloseBlocked: false,
+  width: 'regular',
 })
 
 const isOpen = defineModel<boolean>('open', { default: false })
 </script>
 
 <template>
-  <BaseModal v-slot="{ closeModal }" v-model:open="isOpen" :is-close-blocked="isCloseBlocked">
+  <BaseModal
+    v-slot="{ closeModal }"
+    v-model:open="isOpen"
+    :width="width"
+    :is-close-blocked="isCloseBlocked"
+  >
     <div class="flex flex-col gap-5 p-5 sm:p-6">
       <header class="flex items-start justify-between gap-4">
         <BaseHeading :level="2" size="subtitle">{{ title }}</BaseHeading>
@@ -33,7 +40,7 @@ const isOpen = defineModel<boolean>('open', { default: false })
         />
       </header>
       <slot />
-      <footer class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <footer v-if="$slots.actions" class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <slot name="actions" />
       </footer>
     </div>

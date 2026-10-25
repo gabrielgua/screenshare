@@ -5,13 +5,17 @@ import BaseLinkCard from '@/components/surface/BaseLinkCard.vue'
 import BaseText from '@/components/typography/BaseText.vue'
 import type { RoomSummary } from '@/services/rooms-service'
 import { RoomIcon, RoomOwnerIcon } from '@/theme/app-icons'
+import { useRoomPresence } from '@/composables/use-room-presence'
+import RoomLivePresence from './RoomLivePresence.vue'
 import { formatMemberCount } from '@/formatting/member-count'
 
 interface RoomSummaryCardProps {
   roomSummary: RoomSummary
 }
 
-defineProps<RoomSummaryCardProps>()
+const props = defineProps<RoomSummaryCardProps>()
+
+const { presentUsers } = useRoomPresence(() => props.roomSummary.id)
 </script>
 
 <template>
@@ -29,5 +33,8 @@ defineProps<RoomSummaryCardProps>()
       {{ roomSummary.isOwner ? 'Your room' : `By ${roomSummary.ownerName}` }} ·
       {{ formatMemberCount(roomSummary.memberCount) }}
     </BaseText>
+    <template #trailing>
+      <RoomLivePresence :present-users="presentUsers" is-condensed-on-phones class="shrink-0" />
+    </template>
   </BaseLinkCard>
 </template>

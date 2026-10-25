@@ -10,12 +10,14 @@ import RoomDetailsInformation from '@/components/room-details/RoomDetailsInforma
 import RoomManagementActions from '@/components/room-details/RoomManagementActions.vue'
 import RoomBlockedUsersSection from '@/components/rooms/RoomBlockedUsersSection.vue'
 import RoomMembersSection from '@/components/rooms/RoomMembersSection.vue'
+import { useRequestedRoomPresence } from '@/composables/use-requested-room-presence'
 import { useRoomStore } from '@/stores/room-store'
 
 const route = useRoute()
 const roomStore = useRoomStore()
 
 const requestedRoomId = computed(() => String(route.params.roomId))
+const { presentUsers, presentUserIds } = useRequestedRoomPresence()
 const roomOwnerName = computed(() => roomStore.roomPreview?.ownerName ?? 'Unknown owner')
 
 watch(requestedRoomId, (roomId) => roomStore.loadRoom(roomId), { immediate: true })
@@ -44,6 +46,7 @@ function handleRetryRequested() {
           :room-name="roomStore.room.name"
           :owner-name="roomOwnerName"
           :owner-avatar-url="roomStore.roomPreview?.ownerAvatarUrl"
+          :present-users="presentUsers"
         />
         <RoomManagementActions :room-name="roomStore.room.name" />
         <RoomDetailsInformation
@@ -52,7 +55,7 @@ function handleRetryRequested() {
           :member-count="roomStore.roomMembers.length"
           :blocked-user-count="roomStore.roomBlockedUsers.length"
         />
-        <RoomMembersSection />
+        <RoomMembersSection :present-user-ids="presentUserIds" />
         <RoomBlockedUsersSection />
       </div>
     </PageTransition>

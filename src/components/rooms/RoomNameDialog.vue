@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import BaseButton from '@/components/button/BaseButton.vue'
 import BaseDialog from '@/components/dialog/BaseDialog.vue'
 import BaseInput from '@/components/form/BaseInput.vue'
@@ -26,6 +26,7 @@ const emit = defineEmits<{
 const isOpen = defineModel<boolean>('open', { default: false })
 
 const roomName = ref('')
+const roomNameFormId = `room-name-form-${useId()}`
 
 const trimmedRoomName = computed(() => roomName.value.trim())
 const isRoomNameTooLong = computed(() => trimmedRoomName.value.length > MAXIMUM_ROOM_NAME_LENGTH)
@@ -55,7 +56,7 @@ function handleRoomNameSubmit() {
 
 <template>
   <BaseDialog v-model:open="isOpen" :title="title" :is-close-blocked="isSubmitting">
-    <form id="room-name-form" @submit.prevent="handleRoomNameSubmit">
+    <form :id="roomNameFormId" @submit.prevent="handleRoomNameSubmit">
       <BaseInput
         v-model="roomName"
         label="Room name"
@@ -79,7 +80,7 @@ function handleRoomNameSubmit() {
       </BaseButton>
       <BaseButton
         type="submit"
-        form="room-name-form"
+        :form="roomNameFormId"
         :leading-icon="confirmIcon"
         :is-loading="isSubmitting"
         :is-disabled="!canSubmit"

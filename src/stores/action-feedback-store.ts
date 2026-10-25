@@ -8,7 +8,12 @@ export interface ActionFeedback {
   kind: ActionFeedbackKind
   title: string
   message?: string
+  shouldAutoClose: boolean
   autoCloseAfterMilliseconds: number
+}
+
+export interface ActionFeedbackOptions {
+  shouldAutoClose?: boolean
 }
 
 const SUCCESS_AUTO_CLOSE_MILLISECONDS = 2500
@@ -38,7 +43,12 @@ export const useActionFeedbackStore = defineStore('action-feedback', () => {
     isFeedbackOpen.value = false
   }
 
-  function showFeedback(kind: ActionFeedbackKind, title: string, message?: string) {
+  function showFeedback(
+    kind: ActionFeedbackKind,
+    title: string,
+    message?: string,
+    { shouldAutoClose = true }: ActionFeedbackOptions = {},
+  ) {
     cancelAutoClose()
     const autoCloseAfterMilliseconds = autoCloseMillisecondsByKind[kind]
     visibleFeedback.value = {
@@ -46,18 +56,21 @@ export const useActionFeedbackStore = defineStore('action-feedback', () => {
       kind,
       title,
       message,
+      shouldAutoClose,
       autoCloseAfterMilliseconds,
     }
     isFeedbackOpen.value = true
-    autoCloseTimer = setTimeout(closeFeedback, autoCloseAfterMilliseconds)
+    if (shouldAutoClose) {
+      autoCloseTimer = setTimeout(closeFeedback, autoCloseAfterMilliseconds)
+    }
   }
 
-  function showSuccessFeedback(title: string, message?: string) {
-    showFeedback('success', title, message)
+  function showSuccessFeedback(title: string, message?: string, options?: ActionFeedbackOptions) {
+    showFeedback('success', title, message, options)
   }
 
-  function showErrorFeedback(title: string, message?: string) {
-    showFeedback('error', title, message)
+  function showErrorFeedback(title: string, message?: string, options?: ActionFeedbackOptions) {
+    showFeedback('error', title, message, options)
   }
 
   return {

@@ -124,6 +124,17 @@ export const useRoomStore = defineStore('room', () => {
     }
   }
 
+  async function reloadRequestedRoomMembers() {
+    const roomId = requestedRoomId.value
+    if (!roomId || !room.value) {
+      return
+    }
+    const loadedMembers = await fetchRoomMembers(roomId)
+    if (requestedRoomId.value === roomId) {
+      roomMembers.value = loadedMembers
+    }
+  }
+
   async function joinRequestedRoom() {
     if (!requestedRoomId.value) {
       return
@@ -175,6 +186,7 @@ export const useRoomStore = defineStore('room', () => {
     isRoomMember,
     visibleRoomScreen,
     loadRoom,
+    reloadRequestedRoomMembers,
     joinRequestedRoom,
     leaveRequestedRoom,
     renameRequestedRoom,

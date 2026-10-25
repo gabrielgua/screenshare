@@ -25,6 +25,7 @@ defineProps<BaseLinkCardProps>()
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
         <slot />
       </div>
+      <slot name="trailing" />
       <BaseIcon
         :icon="ArrowRightIcon"
         size="md"

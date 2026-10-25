@@ -4,6 +4,8 @@ import BaseBadge from '@/components/badge/BaseBadge.vue'
 import BaseIconCircle from '@/components/icon/BaseIconCircle.vue'
 import BaseLinkCard from '@/components/surface/BaseLinkCard.vue'
 import BaseText from '@/components/typography/BaseText.vue'
+import RoomLivePresence from '@/components/rooms/RoomLivePresence.vue'
+import { useRoomPresence } from '@/composables/use-room-presence'
 import { formatMemberCount } from '@/formatting/member-count'
 import type { AdministeredRoom } from '@/services/rooms-service'
 import { RoomBlockedUserIcon, RoomIcon, RoomOwnerIcon } from '@/theme/app-icons'
@@ -18,6 +20,7 @@ const props = withDefaults(defineProps<AdministeredRoomCardProps>(), {
 })
 
 const timeSinceCreation = useTimeAgo(() => props.administeredRoom.createdAt)
+const { presentUsers } = useRoomPresence(() => props.administeredRoom.id)
 </script>
 
 <template>
@@ -45,5 +48,8 @@ const timeSinceCreation = useTimeAgo(() => props.administeredRoom.createdAt)
       By {{ administeredRoom.ownerName }} · {{ formatMemberCount(administeredRoom.memberCount) }}
     </BaseText>
     <BaseText size="caption" tone="subtle">Created {{ timeSinceCreation }}</BaseText>
+    <template #trailing>
+      <RoomLivePresence :present-users="presentUsers" is-condensed-on-phones class="shrink-0" />
+    </template>
   </BaseLinkCard>
 </template>

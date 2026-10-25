@@ -47,8 +47,8 @@ Mobile browsers cannot capture the screen, so phones can watch streams but not s
 2. **Supabase project and Discord sign in** (done).
 3. **Account approval** (done): admins approve or deny every new user.
 4. **Approval emails**: email users when their account is approved. Not built yet.
-5. **Rooms** (current): create rooms, share links, manage names and members. Presence with
-   Supabase Realtime comes next.
+5. **Rooms** (current): create rooms, share links, manage names and members, and see who is in
+   each room right now with Supabase Realtime presence.
 6. **Screen sharing** with `getDisplayMedia` and WebRTC.
 
 ## Commands
@@ -83,12 +83,18 @@ src/
     surface/               BaseCard (padding none, compact or comfortable), BaseLinkCard (a card
                            that links somewhere, with a leading slot and an arrow)
     typography/            BaseText (owns every text class), BaseHeading (renders BaseText)
-    avatar/                BaseAvatar (image with an initials fallback)
+    avatar/                BaseAvatar (image with an initials fallback), BaseAvatarStack
+                           (overlapping avatars with a +N bubble)
     badge/                 BaseBadge (solid count pill or soft labelled badge with an icon)
     chip/                  BaseChip (toggle button), BaseChipGroup (generic multi select chips
                            bound with v-model)
-    dialog/                BaseModal (animated native <dialog> shell)
+    dialog/                BaseModal (animated native <dialog> shell, compact, regular or wide)
                            BaseDialog (BaseModal with title, body and actions)
+                           BaseDrawer (native <dialog> that slides up from the bottom, with a
+                           title and a header slot for tabs). It always takes 80% of the screen
+                           height and scrolls its content. The panel slides up in 200ms with
+                           ease-out and no bounce, and the content bounces in after 200ms.
+    tabs/                  BaseTabs (generic segmented tabs bound with v-model)
     feedback/              ActionFeedbackModal, ConfirmActionModal, AutoCloseCountdownBar,
                            LoadErrorRetry, NoMatchingResults
     admin/                 Admin layout pieces: AdminPanelLink, AdminNavigation and its tabs,
@@ -110,15 +116,24 @@ src/
     account-status/        AccountStatusNotice and the pending, denied, deactivated and load
                            error notices
     user-approvals/        Admin approvals: list, card and review dialog
-    rooms/                 Rooms dashboard section, room name dialog and rename button, room
-                           page header, share link button, stage placeholder, member and
-                           blocked user sections, invitation and unavailable notices
+    rooms/                 Rooms dashboard section, room name dialog, room page sidebar and
+                           compact bar sharing one details panel with share, rename, members
+                           and leave buttons, people here now
+                           (expanded list and collapsed avatars), presence avatar, live
+                           presence summary, stage placeholder, member and blocked user
+                           sections, invitation and unavailable notices
     home/                  SignedOutHero, SignedInDashboard (welcome plus the user's rooms)
-    layout/                AppHeader, AppBrandMark, HomeLink, PageContainer, PageLoadingSpinner,
+    layout/                AppHeader, AppBrandMark, HomeLink, PageContainer (regular or full
+                           width), PageLoadingSpinner,
                            PageTransition, StaggeredListTransition
     theme/                 ColorSchemeToggle
   composables/             use-*.ts shared reactive logic
-                           use-color-scheme.ts, use-form-field-accessibility.ts
+                           use-color-scheme.ts, use-form-field-accessibility.ts,
+                           use-native-dialog.ts (open, close, Escape and backdrop handling
+                           shared by BaseModal and BaseDrawer),
+                           use-room-presence.ts (who is in a room right now) and
+                           use-requested-room-presence.ts (the same for the room store's room,
+                           reloading members when someone new appears)
   services/                supabase-client.ts and *-service.ts files that talk to Supabase
   formatting/              Pure display formatters, like date-time.ts and member-count.ts
   stores/                  *-store.ts Pinia stores
@@ -130,6 +145,8 @@ src/
                            and its role and activation actions
                            action-feedback-store.ts owns the success and error modal
                            my-rooms-store.ts owns the signed in user's rooms and creation
+                           room-presence-store.ts owns one Realtime presence channel per room,
+                           shared by every component watching it
                            room-store.ts owns the room shown on the room page and the admin
                            room page: preview, room, members, blocked users, actions
                            administered-rooms-store.ts owns the admin's rooms list and search
@@ -242,13 +259,44 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   blocked), `list_room_members`, `list_my_rooms`, `list_blocked_room_users`,
   `unblock_room_user` and the admin only `list_all_rooms`. They all call `private.ensure_caller_is_approved()`. Room management goes
   through `private.find_room_the_caller_can_manage()`.
+- **Presence:** each room has a private Realtime channel named `room-presence:<room id>`, keyed
+  by user id. Members on the room page share their name, avatar and arrival time. Room cards on
+  the dashboard and the admin list, the room page and the admin room page only watch. Admins
+  watching from the admin pages are never counted. Policies on `realtime.messages` call
+  `private.can_use_room_presence_topic()`, so only approved members of that room and admins can
+  join. Joining needs read access to both `presence` and `broadcast`, otherwise Realtime refuses
+  the channel, while writing is allowed for `presence` only. The client must bind a presence
+  listener before subscribing, or it never receives presence. `supabaseClient.channel()` returns
+  the existing channel for a topic, which is why `room-presence-store.ts` counts watchers instead
+  of letting components open channels themselves. Presence payloads come from the client, and a
+  removed member who keeps the page open stays visible until they leave it.
 - **Links while signed out:** Discord sign in returns to the page it started from, so a shared
   room link survives sign in. The Supabase config allows `http://localhost:5173/**` as a
   redirect for that. Add the production address with `/**` once deployed.
 - **Frontend:** the approved home page is the rooms dashboard. `/rooms/:roomId` shows a sign in
   prompt, an approval notice, a not found notice, a blocked notice, the join invitation or the
-  room itself. The room page has the header, a placeholder where screen sharing will go, the
-  member cards, and for managers the blocked users once anyone is blocked.
+  room itself. The room page uses the full width of the screen: the stage, where screen sharing
+  will go, fills the left, and `RoomSidebar` sits on the right. The sidebar holds the room name,
+  share link, rename, leave, and the people here now. The full member list, with remove and the
+  blocked users, opens in a modal from the Members button. On large screens the sidebar
+  collapses to a column of avatars of the people here now, and the choice is remembered in local
+  storage. Below the `lg` breakpoint the sidebar is hidden. `RoomCompactBar` becomes a second
+  header under the app header with the room name, the people here now, a copy link button and a
+  details button. That button opens a `BaseDrawer` with two tabs: Room, with the same
+  `RoomDetailsPanel` the sidebar uses minus its Members button, and Members, with the member
+  list, its remove actions and the blocked users. The stage is centered in the space left. Both
+  layouts are rendered at once and CSS hides one, so ids inside them must come from `useId()`.
+  Never use negative margins inside a scroll container: `overflow-y-auto` also scrolls
+  sideways, so the extra width shows a horizontal scrollbar. Scroll areas that hold animated
+  lists also get `overflow-x-hidden`, because pop in animations briefly make items wider.
+- **Sidebar animation:** the sidebar card animates its width, while its expanded and collapsed
+  contents keep a fixed width (`w-80` and `w-20`, with `box-content` on the card) and are
+  clipped. That way nothing reflows or shows scrollbars mid animation.
+- **Phone header:** below `sm` the app header shows only the brand, the avatar and a menu
+  button. `AppMobileMenu` opens a `BaseDrawer` with the user, Home, Admin with the pending count,
+  the color scheme switch and Sign out.
+- **Full width pages:** routes with `meta.usesFullWidthLayout` widen the header, and their view
+  passes `width="full"` to `PageContainer`.
 - **Admin rooms:** the dashboard shows admins only their own rooms. `/admin/rooms` lists every
   room with a debounced search by room or owner name, and each card opens
   `/admin/rooms/:roomId`. That page shows the room's details, renames it, removes members and
@@ -287,6 +335,9 @@ The app feels bouncy on purpose. Every animation follows the same pattern:
 - **Lists:** render lists through `StaggeredListTransition`, passing the list element as `tag`
   and giving each item a `data-stagger-index` with its position. Items pop in one after another,
   leaving items fade out, and the rest slide into place.
+- **Drawers:** the panel moves without bounce and only its content bounces, starting as the
+  panel lands. Content inside a native dialog animates in with `starting:` because it gets its
+  first style when the dialog opens.
 - **Modals:** always build on `BaseModal`. It animates the native dialog and its backdrop in and
   out with `starting:` and `transition-discrete`.
 - **Reduced motion:** every animation also gets `motion-reduce:transition-none` or
@@ -308,7 +359,8 @@ actionFeedbackStore.showErrorFeedback('Could not save this review', describeErro
 ```
 
 The modal is mounted once in `App.vue`. Success closes itself after 2.5 seconds and errors after
-4.5 seconds, with a countdown bar. Turn unknown errors into text with `describeError` from
+4.5 seconds, with a countdown bar. Pass `{ shouldAutoClose: false }` as the third argument when
+the reader needs time, like a link to copy by hand: the bar is replaced by a Close button. Turn unknown errors into text with `describeError` from
 `src/services/describe-error.ts`.
 
 ### Dark mode
