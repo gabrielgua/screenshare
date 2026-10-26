@@ -16,7 +16,7 @@ useAuthenticationStore().restoreSession()
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col" :class="{ 'lg:h-dvh': route.meta.usesFullWidthLayout }">
+  <div class="flex min-h-dvh flex-col" :class="{ 'h-dvh': route.meta.usesFullWidthLayout }">
     <AppHeader v-if="!isAppFullscreen" />
     <div class="flex min-h-0 flex-1 flex-col overflow-clip">
       <RouterView v-slot="{ Component, route }">

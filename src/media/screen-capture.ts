@@ -6,8 +6,13 @@ interface ScreenCaptureOptions extends DisplayMediaStreamOptions {
   systemAudio?: 'include' | 'exclude'
 }
 
+const TOUCH_ONLY_DEVICE_QUERY = '(hover: none) and (pointer: coarse)'
+
 export function canCaptureScreen(): boolean {
-  return typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getDisplayMedia)
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+    return false
+  }
+  return !window.matchMedia(TOUCH_ONLY_DEVICE_QUERY).matches
 }
 
 export async function captureScreen(settings: ScreenShareSettings): Promise<MediaStream> {

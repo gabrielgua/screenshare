@@ -378,7 +378,14 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   has no audio), focus and full screen, all on hover. Clicking a share focuses it, and clicking
   the focused share goes back to side by side. Full screen on a tile makes the stage full screen in
   the focus layout, with the other shares as thumbnails that show on hover.
-- **Phones** cannot capture the screen, so the share button is disabled there and phones watch.
+- **Phones** cannot capture the screen, so `canCaptureScreen()` also rules out touch only devices
+  (no hover and a coarse pointer) and the share button is not shown there at all. Phones watch.
+- **Fitting the stage:** the stage area is a size container (`stage-fit-area`) and the stage uses
+  `video-fit-frame`, which takes the largest 16:9 box that fits both its width and height. Room
+  pages are pinned to the window height (`h-dvh`) on every screen size so that box always fits.
+  Phones held sideways match the `short-landscape` variant (landscape and at most 500px tall):
+  the app header hides on the room page, the room bar puts the name and presence on one line,
+  and the spacing tightens, so the whole share stays visible.
 
 ## Releases
 

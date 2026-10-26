@@ -83,7 +83,7 @@ function handleRetryRequested() {
   <PageContainer
     :width="visibleRoomPageScreen === 'room' ? 'full' : 'regular'"
     class="flex-1"
-    :class="visibleRoomPageScreen === 'room' ? 'lg:min-h-0' : 'justify-center'"
+    :class="visibleRoomPageScreen === 'room' ? 'min-h-0' : 'justify-center'"
   >
     <PageTransition>
       <PageLoadingSpinner
@@ -125,7 +125,10 @@ function handleRetryRequested() {
         v-else-if="visibleRoomPageScreen === 'invitation' && roomStore.roomPreview"
         :room-preview="roomStore.roomPreview"
       />
-      <div v-else-if="roomStore.room" class="flex flex-1 flex-col gap-4 lg:min-h-0 lg:flex-row">
+      <div
+        v-else-if="roomStore.room"
+        class="flex min-h-0 flex-1 flex-col gap-4 short-landscape:gap-2 lg:flex-row"
+      >
         <RoomCompactBar
           :room="roomStore.room"
           :owner-name="roomStore.roomPreview?.ownerName"

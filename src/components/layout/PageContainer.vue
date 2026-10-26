@@ -11,7 +11,7 @@ withDefaults(defineProps<PageContainerProps>(), {
 
 const layoutClassesByWidth: Record<PageContainerWidth, string> = {
   regular: 'max-w-5xl gap-6 py-6 sm:gap-8 sm:py-10',
-  full: 'max-w-none gap-4 py-4 sm:py-6',
+  full: 'max-w-none gap-4 py-4 sm:py-6 short-landscape:gap-2 short-landscape:py-2',
 }
 </script>
 
