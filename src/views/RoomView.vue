@@ -9,11 +9,12 @@ import PageTransition from '@/components/layout/PageTransition.vue'
 import RoomCompactBar from '@/components/rooms/RoomCompactBar.vue'
 import RoomInvitation from '@/components/rooms/RoomInvitation.vue'
 import RoomSidebar from '@/components/rooms/RoomSidebar.vue'
-import RoomStagePlaceholder from '@/components/rooms/RoomStagePlaceholder.vue'
 import RoomUnavailableNotice from '@/components/rooms/RoomUnavailableNotice.vue'
+import RoomScreenShareArea from '@/components/screen-share/RoomScreenShareArea.vue'
 import { useRequestedRoomPresence } from '@/composables/use-requested-room-presence'
 import { useRoomArrivalNotifications } from '@/composables/use-room-arrival-notifications'
 import { useRoomKickRedirect } from '@/composables/use-room-kick-redirect'
+import { useRoomScreenSharing } from '@/composables/use-room-screen-sharing'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRoomStore } from '@/stores/room-store'
@@ -41,6 +42,7 @@ useRoomArrivalNotifications(
   () => roomStore.room?.id,
   () => roomStore.room?.name,
 )
+const { screenShares } = useRoomScreenSharing(presentUsers, () => roomStore.isRoomMember)
 useRoomKickRedirect(
   () => roomStore.room?.id,
   () => roomStore.room?.name,
@@ -130,7 +132,7 @@ function handleRetryRequested() {
           :present-users="presentUsers"
           :present-user-ids="presentUserIds"
         />
-        <RoomStagePlaceholder />
+        <RoomScreenShareArea :screen-shares="screenShares" />
         <RoomSidebar
           :room="roomStore.room"
           :owner-name="roomStore.roomPreview?.ownerName"

@@ -47,9 +47,9 @@ Mobile browsers cannot capture the screen, so phones can watch streams but not s
 2. **Supabase project and Discord sign in** (done).
 3. **Account approval** (done): admins approve or deny every new user.
 4. **Approval emails**: email users when their account is approved. Not built yet.
-5. **Rooms** (current): create rooms, share links, manage names and members, and see who is in
+5. **Rooms** (done): create rooms, share links, manage names and members, and see who is in
    each room right now with Supabase Realtime presence.
-6. **Screen sharing** with `getDisplayMedia` and WebRTC.
+6. **Screen sharing** (current) with `getDisplayMedia` and WebRTC.
 
 ## Commands
 
@@ -79,7 +79,9 @@ src/
   components/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton)
     form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea,
-                           BaseSwitch (labelled on and off switch bound with v-model)
+                           BaseSlider is horizontal or vertical (`range-vertical` utility),
+                           BaseSwitch (labelled on and off switch bound with v-model),
+                           BaseSlider (range input for values like volume)
     icon/                  BaseIcon, BaseSpinner, BaseIconCircle
     surface/               BaseCard (padding none, compact or comfortable), BaseLinkCard (a card
                            that links somewhere, with a leading slot and an arrow)
@@ -95,7 +97,8 @@ src/
                            title and a header slot for tabs). It always takes 80% of the screen
                            height and scrolls its content. The panel slides up in 200ms with
                            ease-out and no bounce, and the content bounces in after 200ms.
-    tabs/                  BaseTabs (generic segmented tabs bound with v-model)
+    segmented-control/     BaseSegmentedControl (generic segmented control bound with v-model,
+                           as tabs or as single choice options)
     toast/                 BaseToast and ToastViewport (mounted once in App.vue)
     feedback/              ActionFeedbackModal, ConfirmActionModal, AutoCloseCountdownBar,
                            LoadErrorRetry, NoMatchingResults
@@ -124,6 +127,9 @@ src/
                            (expanded list and collapsed avatars), presence avatar, live
                            presence summary, stage placeholder, member and blocked user
                            sections, invitation and unavailable notices
+    screen-share/          The room's screen sharing area: stage (empty state, side by side or
+                           focus layout, immersive full screen), tiles with their video and
+                           hover controls, the control bar and the share dialog
     home/                  SignedOutHero, SignedInDashboard (welcome plus the user's rooms)
     layout/                AppHeader, AppBrandMark, HomeLink, PageContainer (regular or full
                            width), PageLoadingSpinner,
@@ -137,6 +143,9 @@ src/
                            use-requested-room-presence.ts (the same for the room store's room,
                            reloading members when someone new appears)
   audio/                   notification-sounds.ts: short chimes generated with the Web Audio API
+  media/                   Screen capture and WebRTC: quality settings, getDisplayMedia, one
+                           peer connection per person (room-peer-link.ts) and the mesh that
+                           keeps them in sync with presence (room-peer-mesh.ts)
   services/                supabase-client.ts and *-service.ts files that talk to Supabase
   formatting/              Pure display formatters, like date-time.ts and member-count.ts
   stores/                  *-store.ts Pinia stores
@@ -151,6 +160,8 @@ src/
                            room-notification-preferences-store.ts owns each user's join and
                            leave notification choices
                            my-rooms-store.ts owns the signed in user's rooms and creation
+                           screen-share-store.ts owns your capture, the streams you receive,
+                           each share's volume and mute, the layout and the peer mesh
                            room-presence-store.ts owns one Realtime presence channel per room,
                            shared by every component watching it
                            room-store.ts owns the room shown on the room page and the admin
@@ -331,6 +342,43 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   room with a debounced search by room or owner name, and each card opens
   `/admin/rooms/:roomId`. That page shows the room's details, renames it, removes members and
   unblocks users. It reuses `room-store.ts` and the room page's member and blocked sections.
+
+## Screen sharing
+
+- **Transport:** a mesh of WebRTC peer connections, one per pair of people in the room, using
+  public Google STUN servers only. There is no TURN server yet, so people behind strict NATs may
+  fail to connect. Each person can share one screen, so a room has up to one share per person.
+- **Signalling:** each room has a second private Realtime channel, `room-signaling:<room id>`,
+  where members and admins may send broadcasts (`private.can_use_room_signaling_topic()`). It
+  is separate from the presence channel so clients still cannot fake kicks there. Messages
+  carry descriptions, batched ICE candidates and view preferences, addressed by user id. ICE
+  candidates are batched every 200ms because Realtime limits how many messages a client can
+  send per second, and dropped candidates made connections hang in checking.
+- **Negotiation:** `RoomPeerLink` follows the perfect negotiation pattern. The person with the
+  smaller user id is polite. Signals for a link run one after another through a promise chain.
+- **Presence:** sharers set `isSharingScreen` on their presence, so tiles appear right away and
+  show Connecting until the video arrives. The sidebar marks sharers with a screen badge on their
+  avatar (expanded and collapsed) and a Sharing their screen line, and each tile shows the
+  sharer's avatar next to their name.
+- **Quality:** the share dialog picks 480p, 720p or 1080p, 30 or 60 fps, and audio. Choosing the
+  screen, window or tab is left to the browser's own picker, which a web page cannot replace. Each pair has a bitrate cap (`screen-share-quality.ts`), 60 fps
+  uses the `motion` content hint and keeps the frame rate under pressure, and 30 fps uses
+  `detail` and keeps the resolution. H264 is preferred first for hardware encoding, High
+  profile before Main and Baseline, then VP9 and VP8. Measured with WebRTC stats, every captured
+  frame is encoded, sent and decoded at 60 fps settings, with no drops and no quality limits. A tile narrower than 420px tells the sharer it is a thumbnail, and the sharer then sends
+  that person a 320px wide, 15 fps, 300 kbps version.
+- **Controls:** the bar under the stage has mute or unmute everyone (unmute
+  keeps each share's volume), the big round share button that turns into stop, change what you
+  share, app full screen (hides the header), and leave the room (goes home, with an exit icon rather than a hang up icon, since it is a
+  room and not a call). Switching layouts happens by clicking a share, so there is no layout button.
+  Your own share is always muted for you and has no volume controls. Its tile says whether you
+  are sharing with or without audio. An eye button, on the tile and in the bar, hides your own
+  share only for you while everyone else keeps seeing it. Each tile has mute,
+  a vertical volume slider that opens on hover over the mute button (disabled when the share
+  has no audio), focus and full screen, all on hover. Clicking a share focuses it, and clicking
+  the focused share goes back to side by side. Full screen on a tile makes the stage full screen in
+  the focus layout, with the other shares as thumbnails that show on hover.
+- **Phones** cannot capture the screen, so the share button is disabled there and phones watch.
 
 ## Design system
 

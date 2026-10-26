@@ -27,11 +27,23 @@ withDefaults(defineProps<RoomPresentUserRowProps>(), {
       :image-url="presentUser.avatarUrl"
       size="sm"
       is-present
+      :is-sharing-screen="presentUser.isSharingScreen"
     />
-    <BaseText size="sm" weight="medium" class="min-w-0 flex-1 truncate">
-      {{ presentUser.displayName }}
-      <BaseText v-if="isCurrentUser" as="span" size="sm" tone="subtle">(You)</BaseText>
-    </BaseText>
+    <div class="flex min-w-0 flex-1 flex-col">
+      <BaseText size="sm" weight="medium" class="truncate">
+        {{ presentUser.displayName }}
+        <BaseText v-if="isCurrentUser" as="span" size="sm" tone="subtle">(You)</BaseText>
+      </BaseText>
+      <BaseText
+        v-if="presentUser.isSharingScreen"
+        size="caption"
+        weight="medium"
+        tone="brand"
+        class="truncate"
+      >
+        Sharing their screen
+      </BaseText>
+    </div>
     <BaseIcon
       v-if="isRoomOwner"
       :icon="RoomOwnerIcon"

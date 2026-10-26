@@ -31,6 +31,7 @@ defineProps<RoomCollapsedPresenceProps>()
           :name="presentUser.displayName"
           :image-url="presentUser.avatarUrl"
           is-present
+          :is-sharing-screen="presentUser.isSharingScreen"
         />
       </li>
     </StaggeredListTransition>

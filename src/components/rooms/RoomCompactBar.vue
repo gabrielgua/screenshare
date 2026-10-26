@@ -2,7 +2,9 @@
 import { ref } from 'vue'
 import BaseIconButton from '@/components/button/BaseIconButton.vue'
 import BaseDrawer from '@/components/dialog/BaseDrawer.vue'
-import BaseTabs, { type BaseTabOption } from '@/components/tabs/BaseTabs.vue'
+import BaseSegmentedControl, {
+  type SegmentedControlOption,
+} from '@/components/segmented-control/BaseSegmentedControl.vue'
 import BaseHeading from '@/components/typography/BaseHeading.vue'
 import type { PresentRoomUser } from '@/services/room-presence-service'
 import type { Room } from '@/services/rooms-service'
@@ -30,7 +32,7 @@ withDefaults(defineProps<RoomCompactBarProps>(), {
 
 const roomStore = useRoomStore()
 
-const ROOM_DRAWER_TABS: BaseTabOption<RoomDrawerTab>[] = [
+const ROOM_DRAWER_TABS: SegmentedControlOption<RoomDrawerTab>[] = [
   { value: 'room', label: 'Room', icon: RoomIcon },
   { value: 'members', label: 'Members', icon: ParticipantsIcon },
 ]
@@ -67,9 +69,10 @@ function handleDetailsButtonClick() {
     <BaseDrawer v-model:open="isDetailsDrawerOpen" :title="room.name">
       <template #header>
         <RoomOwnerLabel v-if="ownerName" :owner-name="ownerName" class="-mt-2" />
-        <BaseTabs
+        <BaseSegmentedControl
           v-model="selectedDrawerTab"
-          :tabs="ROOM_DRAWER_TABS"
+          :options="ROOM_DRAWER_TABS"
+          kind="tabs"
           accessible-label="Room details sections"
           class="mt-1"
         />

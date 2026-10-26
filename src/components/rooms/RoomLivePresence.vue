@@ -22,6 +22,7 @@ const presentPeople = computed<AvatarStackPerson[]>(() =>
     imageUrl: presentUser.avatarUrl,
   })),
 )
+const presentSummary = computed(() => `${presentUserCount.value} here now`)
 </script>
 
 <template>
@@ -44,8 +45,10 @@ const presentPeople = computed<AvatarStackPerson[]>(() =>
       :tone="hasPresentUsers ? 'success' : 'subtle'"
     >
       <template v-if="hasPresentUsers">
-        {{ presentUserCount
-        }}<span :class="{ 'hidden sm:inline': isCondensedOnPhones }">&nbsp;here now</span>
+        <span v-if="isCondensedOnPhones" class="sm:hidden">{{ presentUserCount }}</span>
+        <span :class="{ 'hidden sm:inline': isCondensedOnPhones }">
+          {{ presentSummary }}
+        </span>
       </template>
       <template v-else>Nobody here right now</template>
     </BaseText>

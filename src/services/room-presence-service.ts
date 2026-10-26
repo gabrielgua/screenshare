@@ -6,6 +6,7 @@ export interface PresentRoomUser {
   displayName: string
   avatarUrl?: string
   arrivedAt: string
+  isSharingScreen?: boolean
 }
 
 function buildRoomPresenceTopic(roomId: string): string {
@@ -33,11 +34,12 @@ export function readPresentRoomUsers(channel: RealtimeChannel): PresentRoomUser[
     .filter((presentRoomUser): presentRoomUser is NonNullable<typeof presentRoomUser> =>
       Boolean(presentRoomUser?.userId),
     )
-    .map(({ userId, displayName, avatarUrl, arrivedAt }) => ({
+    .map(({ userId, displayName, avatarUrl, arrivedAt, isSharingScreen }) => ({
       userId,
       displayName,
       avatarUrl,
       arrivedAt,
+      isSharingScreen: isSharingScreen === true,
     }))
     .sort((firstUser, secondUser) => firstUser.arrivedAt.localeCompare(secondUser.arrivedAt))
 }

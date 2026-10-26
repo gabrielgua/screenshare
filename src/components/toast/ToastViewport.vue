@@ -13,7 +13,7 @@ function handleDismissRequested(toastId: number) {
   <section
     aria-label="Notifications"
     aria-live="polite"
-    class="pointer-events-none fixed inset-x-4 bottom-4 z-20 sm:inset-x-auto sm:top-20 sm:bottom-auto sm:left-1/2 sm:-translate-x-1/2"
+    class="pointer-events-none fixed inset-x-4 bottom-24 z-20 sm:inset-x-auto sm:top-20 sm:bottom-auto sm:left-1/2 sm:-translate-x-1/2"
   >
     <TransitionGroup
       tag="ol"

@@ -4,10 +4,12 @@ import ActionFeedbackModal from '@/components/feedback/ActionFeedbackModal.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import PageTransition from '@/components/layout/PageTransition.vue'
 import ToastViewport from '@/components/toast/ToastViewport.vue'
+import { useAppFullscreen } from '@/composables/use-app-fullscreen'
 import { useColorScheme } from '@/composables/use-color-scheme'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 
 const route = useRoute()
+const { isFullscreen: isAppFullscreen } = useAppFullscreen()
 
 useColorScheme()
 useAuthenticationStore().restoreSession()
@@ -15,7 +17,7 @@ useAuthenticationStore().restoreSession()
 
 <template>
   <div class="flex min-h-dvh flex-col" :class="{ 'lg:h-dvh': route.meta.usesFullWidthLayout }">
-    <AppHeader />
+    <AppHeader v-if="!isAppFullscreen" />
     <div class="flex min-h-0 flex-1 flex-col overflow-clip">
       <RouterView v-slot="{ Component, route }">
         <PageTransition>

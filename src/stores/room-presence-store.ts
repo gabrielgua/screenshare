@@ -122,6 +122,17 @@ export const useRoomPresenceStore = defineStore('room-presence', () => {
     }
   }
 
+  function updateOwnPresence(roomId: string, presenceChanges: Partial<PresentRoomUser>) {
+    const subscription = subscriptionsByRoomId.get(roomId)
+    if (!subscription?.ownPresence) {
+      return
+    }
+    subscription.ownPresence = { ...subscription.ownPresence, ...presenceChanges }
+    if (subscription.isSubscribed && subscription.channel) {
+      void subscription.channel.track(subscription.ownPresence)
+    }
+  }
+
   function stopSharingOwnPresence(roomId: string) {
     const subscription = subscriptionsByRoomId.get(roomId)
     if (!subscription?.ownPresence) {
@@ -139,6 +150,7 @@ export const useRoomPresenceStore = defineStore('room-presence', () => {
     watchRoomPresence,
     stopWatchingRoomPresence,
     shareOwnPresence,
+    updateOwnPresence,
     stopSharingOwnPresence,
   }
 })
