@@ -4,6 +4,7 @@ import { useCurrentUserStore } from '@/stores/current-user-store'
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAdmin?: boolean
+    usesFullWidthLayout?: boolean
   }
 }
 
@@ -12,17 +13,52 @@ const router = createRouter({
   routes: [
     { name: 'home', path: '/', component: () => import('@/views/HomeView.vue') },
     {
-      name: 'user-approvals',
-      path: '/approvals',
-      component: () => import('@/views/UserApprovalsView.vue'),
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayoutView.vue'),
       meta: { requiresAdmin: true },
+      redirect: { name: 'admin-approvals' },
+      children: [
+        {
+          name: 'admin-approvals',
+          path: 'approvals',
+          component: () => import('@/views/admin/UserApprovalsView.vue'),
+        },
+        {
+          name: 'admin-users',
+          path: 'users',
+          component: () => import('@/views/admin/RegisteredUsersView.vue'),
+        },
+        {
+          name: 'admin-user-details',
+          path: 'users/:userId',
+          component: () => import('@/views/admin/UserDetailsView.vue'),
+        },
+        {
+          name: 'admin-rooms',
+          path: 'rooms',
+          component: () => import('@/views/admin/AdministeredRoomsView.vue'),
+        },
+        {
+          name: 'admin-room-details',
+          path: 'rooms/:roomId',
+          component: () => import('@/views/admin/RoomDetailsView.vue'),
+        },
+      ],
     },
+    {
+      name: 'room',
+      path: '/rooms/:roomId',
+      component: () => import('@/views/RoomView.vue'),
+      meta: { usesFullWidthLayout: true },
+    },
+    { path: '/approvals', redirect: { name: 'admin-approvals' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })
 
 router.beforeEach(async (destination) => {
-  if (!destination.meta.requiresAdmin) {
+  const requiresAdmin = destination.matched.some((matchedRoute) => matchedRoute.meta.requiresAdmin)
+  if (!requiresAdmin) {
     return true
   }
   const currentUserStore = useCurrentUserStore()

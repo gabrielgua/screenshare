@@ -13,6 +13,7 @@ export interface PlatformUser {
   email?: string
   role: UserRole
   approvalStatus: UserApprovalStatus
+  isActive: boolean
   reviewMessage?: string
   createdAt: string
 }
@@ -24,12 +25,13 @@ interface UserRow {
   email: string | null
   role: UserRole
   approval_status: UserApprovalStatus
+  is_active: boolean
   review_message: string | null
   created_at: string
 }
 
 const USER_COLUMNS =
-  'id, display_name, avatar_url, email, role, approval_status, review_message, created_at'
+  'id, display_name, avatar_url, email, role, approval_status, is_active, review_message, created_at'
 
 function mapUserRowToPlatformUser(userRow: UserRow): PlatformUser {
   return {
@@ -39,8 +41,40 @@ function mapUserRowToPlatformUser(userRow: UserRow): PlatformUser {
     email: userRow.email ?? undefined,
     role: userRow.role,
     approvalStatus: userRow.approval_status,
+    isActive: userRow.is_active,
     reviewMessage: userRow.review_message ?? undefined,
     createdAt: userRow.created_at,
+  }
+}
+
+export interface PlatformUserDetails extends PlatformUser {
+  reviewedAt?: string
+  reviewerName?: string
+}
+
+interface UserDetailsRow extends UserRow {
+  reviewed_at: string | null
+  reviewer: { display_name: string } | null
+}
+
+const USER_DETAILS_COLUMNS = `${USER_COLUMNS}, reviewed_at, reviewer:reviewed_by(display_name)`
+
+export async function fetchUserDetails(userId: string): Promise<PlatformUserDetails | undefined> {
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select(USER_DETAILS_COLUMNS)
+    .eq('id', userId)
+    .maybeSingle<UserDetailsRow>()
+  if (error) {
+    throw error
+  }
+  if (!data) {
+    return undefined
+  }
+  return {
+    ...mapUserRowToPlatformUser(data),
+    reviewedAt: data.reviewed_at ?? undefined,
+    reviewerName: data.reviewer?.display_name ?? undefined,
   }
 }
 
@@ -61,7 +95,20 @@ export async function fetchPendingUsers(): Promise<PlatformUser[]> {
     .from('users')
     .select(USER_COLUMNS)
     .eq('approval_status', 'pending')
+    .eq('is_active', true)
     .order('created_at', { ascending: true })
+    .returns<UserRow[]>()
+  if (error) {
+    throw error
+  }
+  return data.map(mapUserRowToPlatformUser)
+}
+
+export async function fetchAllUsers(): Promise<PlatformUser[]> {
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select(USER_COLUMNS)
+    .order('created_at', { ascending: false })
     .returns<UserRow[]>()
   if (error) {
     throw error
@@ -82,4 +129,27 @@ export async function reviewUser(
   if (error) {
     throw error
   }
+}
+
+export async function setUserActive(
+  targetUserId: string,
+  shouldBeActive: boolean,
+): Promise<PlatformUser> {
+  const { data, error } = await supabaseClient
+    .rpc('set_user_active', { target_user_id: targetUserId, should_be_active: shouldBeActive })
+    .single<UserRow>()
+  if (error) {
+    throw error
+  }
+  return mapUserRowToPlatformUser(data)
+}
+
+export async function setUserRole(targetUserId: string, newRole: UserRole): Promise<PlatformUser> {
+  const { data, error } = await supabaseClient
+    .rpc('set_user_role', { target_user_id: targetUserId, new_role: newRole })
+    .single<UserRow>()
+  if (error) {
+    throw error
+  }
+  return mapUserRowToPlatformUser(data)
 }

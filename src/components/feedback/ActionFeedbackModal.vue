@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import BaseButton from '@/components/button/BaseButton.vue'
 import BaseModal from '@/components/dialog/BaseModal.vue'
 import BaseIconCircle from '@/components/icon/BaseIconCircle.vue'
 import BaseHeading from '@/components/typography/BaseHeading.vue'
@@ -29,6 +30,10 @@ const isOpen = computed({
     }
   },
 })
+
+function handleCloseButtonClick() {
+  actionFeedbackStore.closeFeedback()
+}
 </script>
 
 <template>
@@ -53,10 +58,21 @@ const isOpen = computed({
         {{ actionFeedbackStore.visibleFeedback.message }}
       </BaseText>
       <AutoCloseCountdownBar
+        v-if="actionFeedbackStore.visibleFeedback.shouldAutoClose"
         :kind="actionFeedbackStore.visibleFeedback.kind"
         :duration-in-milliseconds="actionFeedbackStore.visibleFeedback.autoCloseAfterMilliseconds"
         class="mt-3"
       />
+      <BaseButton
+        v-else
+        variant="neutral"
+        appearance="outlined"
+        is-full-width
+        class="mt-3"
+        @click="handleCloseButtonClick"
+      >
+        Close
+      </BaseButton>
     </div>
   </BaseModal>
 </template>

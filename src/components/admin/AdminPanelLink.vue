@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import BaseBadge from '@/components/badge/BaseBadge.vue'
 import BaseButton from '@/components/button/BaseButton.vue'
 import { usePendingUsersStore } from '@/stores/pending-users-store'
-import { UserApprovalsIcon } from '@/theme/app-icons'
+import { AdminPanelIcon } from '@/theme/app-icons'
 
 const router = useRouter()
 const pendingUsersStore = usePendingUsersStore()
@@ -13,8 +13,8 @@ onMounted(() => {
   pendingUsersStore.loadPendingUsers()
 })
 
-function handleApprovalsButtonClick() {
-  router.push({ name: 'user-approvals' })
+function handleAdminPanelButtonClick() {
+  router.push({ name: 'admin-approvals' })
 }
 </script>
 
@@ -22,11 +22,11 @@ function handleApprovalsButtonClick() {
   <BaseButton
     variant="neutral"
     appearance="ghost"
-    :leading-icon="UserApprovalsIcon"
-    aria-label="User approvals"
-    @click="handleApprovalsButtonClick"
+    :leading-icon="AdminPanelIcon"
+    aria-label="Admin panel"
+    @click="handleAdminPanelButtonClick"
   >
-    <span class="hidden sm:inline">Approvals</span>
+    <span class="hidden sm:inline">Admin</span>
     <BaseBadge v-if="pendingUsersStore.hasPendingUsers" variant="danger">
       {{ pendingUsersStore.pendingUserCount }}
     </BaseBadge>
