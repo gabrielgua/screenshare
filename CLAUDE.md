@@ -43,8 +43,8 @@ Mobile browsers cannot capture the screen, so phones can watch streams but not s
 
 ### Delivery plan
 
-1. **Design system** (current): theme tokens, typography, buttons, inputs, icons, dark mode.
-2. **Supabase project and Discord sign in.**
+1. **Design system** (done): theme tokens, typography, buttons, inputs, icons, dark mode.
+2. **Supabase project and Discord sign in** (current).
 3. **Rooms and presence** with Supabase Realtime.
 4. **Screen sharing** with `getDisplayMedia` and WebRTC.
 
@@ -79,14 +79,43 @@ src/
     icon/                  BaseIcon, BaseSpinner
     surface/               BaseCard
     typography/            BaseText (owns every text class), BaseHeading (renders BaseText)
+    avatar/                BaseAvatar (image with an initials fallback)
+    authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar
+    home/                  SignedOutHero, SignedInWelcome
     layout/                AppHeader, AppBrandMark, PageContainer
     theme/                 ColorSchemeToggle
   composables/             use-*.ts shared reactive logic
                            use-color-scheme.ts, use-form-field-accessibility.ts
-  stores/                  *-store.ts Pinia stores
+  services/                supabase-client.ts, the single Supabase client instance
+  stores/                  *-store.ts Pinia stores, authentication-store.ts owns the session
+supabase/
+  config.toml              Supabase project settings, pushed with the CLI
   views/                   Route views that only compose components
   router/                  Vue Router setup
 ```
+
+## Supabase
+
+The backend is the Supabase project `screenshare`, reference `xergqwhbwljvbvijbold`, region
+`sa-east-1`. The same Supabase account holds unrelated projects, so only ever use this reference.
+
+- **CLI:** installed as a dev dependency. Run it with `pnpm supabase <command>`.
+- **Config:** `supabase/config.toml` is the source of truth for project settings. Every value it
+  declares overwrites the live project on push. Always run `pnpm supabase config diff` first and
+  push only when the diff contains nothing but the intended changes.
+- **Frontend env:** the gitignored `.env.local` holds `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_PUBLISHABLE_KEY`. Get the key with
+  `pnpm supabase projects api-keys --project-ref xergqwhbwljvbvijbold`.
+- **Secrets:** secrets are stored in the Supabase dashboard, never on disk. Never write a secret
+  into a tracked file, a local env file or a chat message.
+- **Discord sign in:** the Discord provider, its client ID `1562489519557836874` and its secret are
+  configured in the dashboard, under Authentication, Sign In / Providers, Discord.
+  `config.toml` deliberately has no `[auth.external.discord]` section: the CLI requires a secret
+  whenever that section exists, and leaving it out keeps pushes from touching the dashboard
+  values. The Discord application must list
+  `https://xergqwhbwljvbvijbold.supabase.co/auth/v1/callback` as an OAuth2 redirect.
+- **Redirects:** sign in returns to the app origin, which must be in `site_url` or
+  `additional_redirect_urls`. Add the production address there once the app is deployed.
 
 ## Design system
 
