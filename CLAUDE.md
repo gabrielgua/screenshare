@@ -494,7 +494,8 @@ English only, a short description, labels, and before and after screenshots for 
 - **`main` is protected.** No direct pushes, admins included. It only changes through a pull
   request from `homolog`.
 - **Screenshots stay local** in the gitignored `.pr-screenshots/<branch-name>/` folder. Never push
-  them to the remote. The user drags them into the pull request on GitHub.
+  them to the repository. Claude uploads them into the pull request body with `gh pr create --attach`
+  or `gh pr edit --attach`, which needs GitHub CLI 2.102.1 or newer.
 - **Screenshots never show real users' private data.** The repository is public. Capture with
   test users on `example.com` addresses, and mask any other email before capturing. Check every
   screenshot before attaching it.
