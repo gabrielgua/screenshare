@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useElementSize, watchDebounced } from '@vueuse/core'
+import { useElementSize, useMediaQuery, useTimeoutFn, watchDebounced } from '@vueuse/core'
 import BaseAvatar from '@/components/avatar/BaseAvatar.vue'
 import BaseSpinner from '@/components/icon/BaseSpinner.vue'
 import BaseText from '@/components/typography/BaseText.vue'
@@ -32,10 +32,27 @@ const emit = defineEmits<{
 }>()
 
 const VIEW_QUALITY_DEBOUNCE_MILLISECONDS = 400
+const TOUCH_CONTROLS_VISIBLE_MILLISECONDS = 4000
 
 const screenShareStore = useScreenShareStore()
 const tileElement = ref<HTMLElement>()
 const { width: tileWidth } = useElementSize(tileElement)
+const canHover = useMediaQuery('(hover: hover) and (pointer: fine)')
+const isShowingTouchControls = computed(
+  () => props.role === 'stage' && screenShareStore.touchControlsUserId === props.screenShare.userId,
+)
+const { start: restartTouchControlsTimer, stop: stopTouchControlsTimer } = useTimeoutFn(
+  () => screenShareStore.hideTouchControls(props.screenShare.userId),
+  TOUCH_CONTROLS_VISIBLE_MILLISECONDS,
+  { immediate: isShowingTouchControls.value },
+)
+
+const areControlsInteractive = computed(() => canHover.value || isShowingTouchControls.value)
+const stageOverlayVisibilityClasses = computed(() =>
+  isShowingTouchControls.value
+    ? 'opacity-100'
+    : 'opacity-0 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100',
+)
 
 const shareAudio = computed(() => screenShareStore.readAudio(props.screenShare.userId))
 const shareLabel = computed(() =>
@@ -60,12 +77,29 @@ function handleThumbnailClick() {
   emit('focusRequested')
 }
 
-function handleStageClick() {
-  emit('focusToggleRequested')
+function handleStageClick(clickEvent: MouseEvent) {
+  if (canHover.value) {
+    emit('focusToggleRequested')
+    return
+  }
+  ;(clickEvent.currentTarget as HTMLElement).blur()
+  if (isShowingTouchControls.value) {
+    stopTouchControlsTimer()
+    screenShareStore.hideTouchControls(props.screenShare.userId)
+    return
+  }
+  screenShareStore.showTouchControls(props.screenShare.userId)
+  restartTouchControlsTimer()
 }
 
-function handleFocusRequested() {
-  emit('focusRequested')
+function handleControlsPointerDown() {
+  if (isShowingTouchControls.value) {
+    restartTouchControlsTimer()
+  }
+}
+
+function handleFocusToggleRequested() {
+  emit('focusToggleRequested')
 }
 
 function handleFullscreenToggleRequested() {
@@ -102,7 +136,13 @@ function handleFullscreenToggleRequested() {
     <button
       v-if="role === 'stage' && !isFullscreen"
       type="button"
-      :aria-label="isFocused ? 'Show screens side by side' : `Focus ${shareLabel}'s screen`"
+      :aria-label="
+        canHover
+          ? isFocused
+            ? 'Show screens side by side'
+            : `Focus ${shareLabel}'s screen`
+          : `Show the controls for ${shareLabel}'s screen`
+      "
       class="absolute inset-0 cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-500"
       @click="handleStageClick"
     />
@@ -118,7 +158,10 @@ function handleFullscreenToggleRequested() {
       :class="
         role === 'thumbnail'
           ? 'pt-6'
-          : 'pt-10 opacity-0 transition-opacity duration-200 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100 motion-reduce:transition-none'
+          : [
+              'pt-10 transition-opacity duration-200 motion-reduce:transition-none',
+              stageOverlayVisibilityClasses,
+            ]
       "
     >
       <div class="flex min-w-0 items-center gap-2 px-1">
@@ -137,8 +180,10 @@ function handleFullscreenToggleRequested() {
         :screen-share="screenShare"
         :is-focused="isFocused"
         :is-fullscreen="isFullscreen"
-        class="pointer-events-auto shrink-0"
-        @focus-requested="handleFocusRequested"
+        class="shrink-0"
+        :class="areControlsInteractive ? 'pointer-events-auto' : 'pointer-events-none'"
+        @pointerdown="handleControlsPointerDown"
+        @focus-toggle-requested="handleFocusToggleRequested"
         @fullscreen-toggle-requested="handleFullscreenToggleRequested"
       />
     </div>
