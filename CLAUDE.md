@@ -367,6 +367,10 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   profile before Main and Baseline, then VP9 and VP8. Measured with WebRTC stats, every captured
   frame is encoded, sent and decoded at 60 fps settings, with no drops and no quality limits. A tile narrower than 420px tells the sharer it is a thumbnail, and the sharer then sends
   that person a 320px wide, 15 fps, 300 kbps version.
+- **Audio:** browsers give one mixed audio track and never one app's sound. A tab shares only
+  its own audio, the entire screen shares all system audio where the system allows it, and a
+  window shares no audio at all. The dialog says so. Capture asks for `restrictOwnAudio`, so the
+  app's own sounds, like the join chime, stay out of the share where Chrome supports it.
 - **Controls:** the bar under the stage has mute or unmute everyone (unmute
   keeps each share's volume), the big round share button that turns into stop, change what you
   share, app full screen (hides the header), and leave the room (goes home, with an exit icon rather than a hang up icon, since it is a
@@ -382,7 +386,14 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   showing lives in `screen-share-store.ts`, so it survives the tile being rebuilt when the layout
   changes. Full screen on a tile makes the stage full screen in
   the focus layout, with the other shares as thumbnails that show on hover.
-- **Phones** cannot capture the screen, so the share button is disabled there and phones watch.
+- **Phones** cannot capture the screen, so `canCaptureScreen()` also rules out touch only devices
+  (no hover and a coarse pointer) and the share button is not shown there at all. Phones watch.
+- **Fitting the stage:** the stage area is a size container (`stage-fit-area`) and the stage uses
+  `video-fit-frame`, which takes the largest 16:9 box that fits both its width and height. Room
+  pages are pinned to the window height (`h-dvh`) on every screen size so that box always fits.
+  Phones held sideways match the `short-landscape` variant (landscape and at most 500px tall):
+  the app header hides on the room page, the room bar puts the name and presence on one line,
+  and the spacing tightens, so the whole share stays visible.
 
 ## Releases
 

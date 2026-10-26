@@ -49,19 +49,22 @@ function handleDetailsButtonClick() {
 <template>
   <section
     aria-label="Room"
-    class="-mx-4 -mt-4 border-b border-neutral-200 bg-white sm:-mx-6 sm:-mt-6 lg:hidden dark:border-neutral-800 dark:bg-neutral-900"
+    class="-mx-4 -mt-4 border-b border-neutral-200 bg-white sm:-mx-6 sm:-mt-6 short-landscape:-mt-2 lg:hidden dark:border-neutral-800 dark:bg-neutral-900"
   >
-    <div class="flex items-center gap-3 px-4 py-2.5 sm:px-6">
-      <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex items-center gap-3 px-4 py-2.5 sm:px-6 short-landscape:py-1.5">
+      <div
+        class="flex min-w-0 flex-1 flex-col short-landscape:flex-row short-landscape:items-center short-landscape:gap-3"
+      >
         <BaseHeading :level="1" size="section" class="truncate">{{ room.name }}</BaseHeading>
         <RoomLivePresence :present-users="presentUsers" />
       </div>
-      <ShareRoomLinkButton :room-id="room.id" is-icon-only class="shrink-0" />
+      <ShareRoomLinkButton :room-id="room.id" is-icon-only size="sm" class="shrink-0" />
       <BaseIconButton
         :icon="InformationIcon"
         accessible-label="Room details"
         variant="neutral"
         appearance="outlined"
+        size="sm"
         class="shrink-0"
         @click="handleDetailsButtonClick"
       />

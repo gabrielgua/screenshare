@@ -78,10 +78,10 @@ async function handleFullscreenToggleRequested(userId: string) {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-1 flex-col justify-center lg:min-h-0">
+  <div class="stage-fit-area grid min-h-0 min-w-0 flex-1 place-items-center">
     <div
       ref="stageElement"
-      class="group/stage relative aspect-video w-full lg:aspect-auto lg:min-h-96 lg:flex-1"
+      class="group/stage video-fit-frame relative lg:aspect-auto lg:size-full"
       :class="{ 'bg-neutral-950': isStageFullscreen }"
     >
       <ScreenShareEmptyState v-if="screenShares.length === 0" />
