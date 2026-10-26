@@ -31,12 +31,9 @@ const shareDialogPurpose = ref<ShareScreenDialogPurpose>('start')
 const hasRemoteShares = computed(
   () => Object.keys(screenShareStore.remoteStreamsByUserId).length > 0,
 )
-const shareButtonLabel = computed(() => {
-  if (!canShareFromThisDevice) {
-    return 'Screen sharing needs a desktop browser'
-  }
-  return screenShareStore.isSharingScreen ? 'Stop sharing' : 'Share your screen'
-})
+const shareButtonLabel = computed(() =>
+  screenShareStore.isSharingScreen ? 'Stop sharing' : 'Share your screen',
+)
 
 function openShareDialog(purpose: ShareScreenDialogPurpose) {
   shareDialogPurpose.value = purpose
@@ -96,13 +93,13 @@ function handleExitRoomButtonClick() {
       @click="handleMuteEverythingButtonClick"
     />
     <BaseIconButton
+      v-if="canShareFromThisDevice"
       :icon="screenShareStore.isSharingScreen ? StopSharingIcon : ShareScreenIcon"
       :accessible-label="shareButtonLabel"
       :variant="screenShareStore.isSharingScreen ? 'danger' : 'primary'"
       size="lg"
       shape="circle"
       :is-loading="screenShareStore.isStartingShare"
-      :is-disabled="!canShareFromThisDevice"
       @click="handleShareButtonClick"
     />
     <BaseIconButton

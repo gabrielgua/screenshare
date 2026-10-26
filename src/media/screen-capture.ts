@@ -1,13 +1,23 @@
 import { readFrameSize, type ScreenShareSettings } from './screen-share-quality'
 
+interface ScreenAudioConstraints extends MediaTrackConstraints {
+  restrictOwnAudio?: boolean
+}
+
 interface ScreenCaptureOptions extends DisplayMediaStreamOptions {
+  audio?: boolean | ScreenAudioConstraints
   selfBrowserSurface?: 'include' | 'exclude'
   surfaceSwitching?: 'include' | 'exclude'
   systemAudio?: 'include' | 'exclude'
 }
 
+const TOUCH_ONLY_DEVICE_QUERY = '(hover: none) and (pointer: coarse)'
+
 export function canCaptureScreen(): boolean {
-  return typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getDisplayMedia)
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+    return false
+  }
+  return !window.matchMedia(TOUCH_ONLY_DEVICE_QUERY).matches
 }
 
 export async function captureScreen(settings: ScreenShareSettings): Promise<MediaStream> {
@@ -19,7 +29,12 @@ export async function captureScreen(settings: ScreenShareSettings): Promise<Medi
       frameRate: { ideal: settings.frameRate, max: settings.frameRate },
     },
     audio: settings.shouldShareAudio
-      ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      ? {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          restrictOwnAudio: true,
+        }
       : false,
     selfBrowserSurface: 'exclude',
     surfaceSwitching: 'include',

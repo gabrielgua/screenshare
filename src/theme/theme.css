@@ -1,4 +1,5 @@
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 500px));
 
 @theme {
   --font-sans: 'Onest', ui-sans-serif, system-ui, sans-serif;
@@ -143,4 +144,13 @@
 @utility range-vertical {
   writing-mode: vertical-lr;
   direction: rtl;
+}
+
+@utility stage-fit-area {
+  container-type: size;
+}
+
+@utility video-fit-frame {
+  width: min(100cqw, 100cqh * 16 / 9);
+  aspect-ratio: 16 / 9;
 }

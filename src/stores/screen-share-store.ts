@@ -46,6 +46,7 @@ export const useScreenShareStore = defineStore('screen-share', () => {
   const sentViewQualityByUserId = new Map<string, RemoteViewQuality>()
 
   const isOwnShareHidden = ref(false)
+  const touchControlsUserId = ref<string>()
   const isSharingScreen = computed(() => localStream.value !== undefined)
   const isSharingAudio = computed(() => (localStream.value?.getAudioTracks().length ?? 0) > 0)
   const isEverythingMuted = computed(() => {
@@ -155,6 +156,16 @@ export const useScreenShareStore = defineStore('screen-share', () => {
     isOwnShareHidden.value = false
   }
 
+  function showTouchControls(userId: string) {
+    touchControlsUserId.value = userId
+  }
+
+  function hideTouchControls(userId: string) {
+    if (touchControlsUserId.value === userId) {
+      touchControlsUserId.value = undefined
+    }
+  }
+
   function toggleOwnShareVisibility() {
     isOwnShareHidden.value = !isOwnShareHidden.value
   }
@@ -215,6 +226,9 @@ export const useScreenShareStore = defineStore('screen-share', () => {
     isOwnShareHidden,
     isSharingAudio,
     toggleOwnShareVisibility,
+    touchControlsUserId,
+    showTouchControls,
+    hideTouchControls,
     setVolume,
     toggleMuted,
     muteEverything,

@@ -18,6 +18,7 @@ const route = useRoute()
 <template>
   <header
     class="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/80 backdrop-blur dark:border-neutral-800 dark:bg-neutral-950/80"
+    :class="{ 'short-landscape:hidden': route.meta.usesFullWidthLayout }"
   >
     <div
       class="mx-auto flex h-16 items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6"

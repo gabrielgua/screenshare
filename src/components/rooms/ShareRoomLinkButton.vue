@@ -5,14 +5,17 @@ import BaseButton from '@/components/button/BaseButton.vue'
 import { buildRoomShareUrl } from '@/services/rooms-service'
 import { useActionFeedbackStore } from '@/stores/action-feedback-store'
 import { ApproveIcon, InviteLinkIcon } from '@/theme/app-icons'
+import type { ControlSize } from '@/theme/component-sizes'
 
 interface ShareRoomLinkButtonProps {
   roomId: string
   isIconOnly?: boolean
+  size?: ControlSize
 }
 
 const props = withDefaults(defineProps<ShareRoomLinkButtonProps>(), {
   isIconOnly: false,
+  size: 'md',
 })
 
 const COPIED_LABEL_DURATION_MILLISECONDS = 2000
@@ -42,6 +45,7 @@ async function handleShareButtonClick() {
 <template>
   <BaseButton
     variant="primary"
+    :size="size"
     :leading-icon="copied ? ApproveIcon : InviteLinkIcon"
     :is-icon-only="isIconOnly"
     :aria-label="isIconOnly ? shareButtonLabel : undefined"
