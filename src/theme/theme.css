@@ -76,6 +76,31 @@
   --radius-card: 1rem;
 
   --shadow-card: 0 1px 2px rgb(17 18 20 / 0.06), 0 4px 16px rgb(17 18 20 / 0.06);
+
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-pop-in: pop-in 500ms var(--ease-bounce) both;
+  --animate-shrink-to-start: shrink-to-start linear both;
+
+  @keyframes shrink-to-start {
+    from {
+      scale: 1 1;
+    }
+    to {
+      scale: 0 1;
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      scale: 0.4;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
 }
 
 @layer base {
@@ -91,4 +116,31 @@
   body {
     @apply bg-neutral-50 font-sans text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
   }
+}
+
+@utility scrollbar-thin-on-hover {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 150ms ease-in;
+
+  &:hover {
+    scrollbar-color: var(--color-neutral-300) transparent;
+  }
+
+  &:where(.dark, .dark *):hover {
+    scrollbar-color: var(--color-neutral-700) transparent;
+  }
+}
+
+@utility scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+@utility scrollbar-gutter-balanced {
+  scrollbar-gutter: stable both-edges;
+}
+
+@utility range-vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
 }

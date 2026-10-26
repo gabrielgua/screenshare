@@ -37,3 +37,8 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+.pr-screenshots/
+.vercel
+.env*
+!.env.example

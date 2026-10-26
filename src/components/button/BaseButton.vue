@@ -10,6 +10,8 @@ export type ButtonType = 'button' | 'submit' | 'reset'
 
 export type ButtonShape = 'rounded' | 'circle'
 
+export type ButtonContentAlignment = 'center' | 'start'
+
 interface BaseButtonProps {
   variant?: ColorVariant
   appearance?: Appearance
@@ -22,6 +24,7 @@ interface BaseButtonProps {
   isLoading?: boolean
   isDisabled?: boolean
   isFullWidth?: boolean
+  contentAlignment?: ButtonContentAlignment
 }
 
 const props = withDefaults(defineProps<BaseButtonProps>(), {
@@ -36,7 +39,13 @@ const props = withDefaults(defineProps<BaseButtonProps>(), {
   isLoading: false,
   isDisabled: false,
   isFullWidth: false,
+  contentAlignment: 'center',
 })
+
+const justifyClassesByContentAlignment: Record<ButtonContentAlignment, string> = {
+  center: 'justify-center',
+  start: 'justify-start text-left',
+}
 
 const colorClassesByVariant: Record<ColorVariant, Record<Appearance, string>> = {
   primary: {
@@ -116,12 +125,13 @@ const sizeClasses = computed(() =>
 <template>
   <button
     :type="type"
-    class="flex shrink-0 cursor-pointer items-center justify-center gap-2 border font-semibold whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    class="flex shrink-0 cursor-pointer items-center gap-2 border font-semibold whitespace-nowrap transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     :class="[
       colorClassesByVariant[variant][appearance],
       focusOutlineClassesByVariant[variant],
       sizeClasses,
       shapeClassesByShape[shape],
+      justifyClassesByContentAlignment[contentAlignment],
       { 'w-full': isFullWidth },
     ]"
     :disabled="isInteractionBlocked"

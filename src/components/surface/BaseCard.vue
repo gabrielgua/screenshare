@@ -1,8 +1,8 @@
 <script setup lang="ts">
-export type CardPadding = 'compact' | 'comfortable'
+export type CardPadding = 'none' | 'compact' | 'comfortable'
 
 interface BaseCardProps {
-  as?: 'div' | 'section' | 'article'
+  as?: 'div' | 'section' | 'article' | 'aside'
   padding?: CardPadding
 }
 
@@ -11,7 +11,8 @@ withDefaults(defineProps<BaseCardProps>(), {
   padding: 'comfortable',
 })
 
-const cardPaddingClasses: Record<CardPadding, string> = {
+const paddingClassesByPadding: Record<CardPadding, string> = {
+  none: '',
   compact: 'p-4',
   comfortable: 'p-4 sm:p-6',
 }
@@ -20,10 +21,8 @@ const cardPaddingClasses: Record<CardPadding, string> = {
 <template>
   <component
     :is="as"
-    :class="[
-      'rounded-card border border-neutral-200 bg-white shadow-card dark:border-neutral-800 dark:bg-neutral-900',
-      cardPaddingClasses[padding],
-    ]"
+    class="rounded-card border border-neutral-200 bg-white shadow-card dark:border-neutral-800 dark:bg-neutral-900"
+    :class="paddingClassesByPadding[padding]"
   >
     <slot />
   </component>
