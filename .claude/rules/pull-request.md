@@ -84,8 +84,14 @@ Every pull request gets at least one type label and one area label.
 | `enhancement` | type | Improves existing functionality |
 | `bugfix` | type | Fixes a bug |
 | `documentation` | type | Changes docs, rules or `CLAUDE.md` |
+| `refactor` | type | Restructures code without changing behavior |
+| `breaking` | type | Breaks existing behavior, bumps the major version |
+| `release` | type | The `homolog` to `main` pull request, left out of release notes |
 | `frontend` | area | Touches `src/` or anything the user sees |
 | `backend` | area | Touches Supabase, database, functions or auth configuration |
+
+Labels decide where a pull request lands in the GitHub release notes and which version number
+the release gets, so label every pull request accurately.
 
 Apply every label that fits. A pull request can be both `feature` and `documentation`. A change
 that only touches docs, rules or repository settings gets `documentation` alone.
