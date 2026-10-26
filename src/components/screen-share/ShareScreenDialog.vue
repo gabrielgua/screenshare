@@ -100,8 +100,8 @@ function handleConfirmButtonClick() {
       <div class="flex flex-col gap-1">
         <BaseSwitch v-model="shouldShareAudio" label="Share audio" :icon="SoundOnIcon" />
         <BaseText size="caption" tone="subtle">
-          Tabs share their audio in Chrome and Edge. Whole screens can share system audio on
-          Windows.
+          Audio only works when you share a tab or your entire screen. Windows never share
+          audio. To share only one app's sound, play it in a browser tab and share that tab.
         </BaseText>
       </div>
       <BaseText size="caption" tone="subtle">

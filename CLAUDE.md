@@ -367,6 +367,10 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   profile before Main and Baseline, then VP9 and VP8. Measured with WebRTC stats, every captured
   frame is encoded, sent and decoded at 60 fps settings, with no drops and no quality limits. A tile narrower than 420px tells the sharer it is a thumbnail, and the sharer then sends
   that person a 320px wide, 15 fps, 300 kbps version.
+- **Audio:** browsers give one mixed audio track and never one app's sound. A tab shares only
+  its own audio, the entire screen shares all system audio where the system allows it, and a
+  window shares no audio at all. The dialog says so. Capture asks for `restrictOwnAudio`, so the
+  app's own sounds, like the join chime, stay out of the share where Chrome supports it.
 - **Controls:** the bar under the stage has mute or unmute everyone (unmute
   keeps each share's volume), the big round share button that turns into stop, change what you
   share, app full screen (hides the header), and leave the room (goes home, with an exit icon rather than a hang up icon, since it is a

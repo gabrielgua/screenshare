@@ -1,6 +1,11 @@
 import { readFrameSize, type ScreenShareSettings } from './screen-share-quality'
 
+interface ScreenAudioConstraints extends MediaTrackConstraints {
+  restrictOwnAudio?: boolean
+}
+
 interface ScreenCaptureOptions extends DisplayMediaStreamOptions {
+  audio?: boolean | ScreenAudioConstraints
   selfBrowserSurface?: 'include' | 'exclude'
   surfaceSwitching?: 'include' | 'exclude'
   systemAudio?: 'include' | 'exclude'
@@ -24,7 +29,12 @@ export async function captureScreen(settings: ScreenShareSettings): Promise<Medi
       frameRate: { ideal: settings.frameRate, max: settings.frameRate },
     },
     audio: settings.shouldShareAudio
-      ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      ? {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          restrictOwnAudio: true,
+        }
       : false,
     selfBrowserSurface: 'exclude',
     surfaceSwitching: 'include',
