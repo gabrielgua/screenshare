@@ -380,6 +380,46 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   the focus layout, with the other shares as thumbnails that show on hover.
 - **Phones** cannot capture the screen, so the share button is disabled there and phones watch.
 
+## Releases
+
+- **When:** every push to `main`, which only happens by merging the `homolog` to `main` pull
+  request, runs `.github/workflows/release.yml` and publishes a GitHub release. It can also be run
+  by hand from the Actions tab.
+- **Notes:** GitHub generates them from the pull requests merged since the last release, grouped
+  by label as configured in `.github/release.yml`: Breaking changes, Features, Enhancements, Bug
+  fixes, Refactors, Documentation and Other changes. The promotion pull request carries the
+  `release` label and is left out.
+- **Version:** `.github/scripts/decide-next-release-version.sh` reads the labels of the merged pull
+  requests. `breaking` bumps the major version, `feature` the minor version and anything else
+  the patch version. The first release is `v0.1.0`.
+
+## Deployment
+
+- **Host:** the frontend is a static Vite build deployed on Vercel. `vercel.json` sets the pnpm
+  install and build commands, the `dist` output, a rewrite to `index.html` so room links work on
+  refresh, long caching for hashed assets, and security headers that still allow screen capture
+  and full screen.
+- **Configuration, not secrets:** the build needs `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_PUBLISHABLE_KEY`. The publishable key is designed to be public, since row level
+  security protects the data, but neither value lives in the repository. Set them in Vercel's
+  project environment variables, or in `.env.local` locally, using `.env.example` as the
+  template. `vite.config.ts` stops a build when either is missing, and
+  `src/services/public-environment.ts` reads them with a clear error. The Supabase secret key is
+  never used by the frontend.
+- **Project:** Vercel project `screenshare` in the personal scope `gabrielguas-projects`, linked
+  to the GitHub repository. Pushes to `main` deploy production at
+  `https://screenshare.gabrielgua.com.br`, and every other branch gets a preview. `homolog` always
+  has `https://screenshare-git-homolog-gabrielguas-projects.vercel.app`. The subdomain's DNS lives
+  at Hostinger as a CNAME from `screenshare` to the target Vercel gives in
+  `vercel domains verify screenshare.gabrielgua.com.br`. Previews sit behind Vercel's login by
+  default, and production is public.
+- **Sign in redirects:** `site_url` is the production address, and `additional_redirect_urls`
+  holds the production address and the `homolog` preview with `/**`, plus localhost. The Vercel
+  CLI writes a short lived `VERCEL_OIDC_TOKEN` into `.env.local` when linking. Delete that line,
+  since local env files never hold tokens. Never allow
+  `*.vercel.app` as a whole: anyone can host there, so it would let other sites receive sign in
+  tokens.
+
 ## Design system
 
 There is no design system page. The components and their props below are the reference.
