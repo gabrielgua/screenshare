@@ -376,7 +376,11 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   share only for you while everyone else keeps seeing it. Each tile has mute,
   a vertical volume slider that opens on hover over the mute button (disabled when the share
   has no audio), focus and full screen, all on hover. Clicking a share focuses it, and clicking
-  the focused share goes back to side by side. Full screen on a tile makes the stage full screen in
+  the focused share goes back to side by side. On touch screens, which have no hover, tapping a share
+  shows its controls instead and they hide after 4 seconds. The focus button in the controls
+  toggles focus and side by side. Hidden controls ignore taps. Which share has its controls
+  showing lives in `screen-share-store.ts`, so it survives the tile being rebuilt when the layout
+  changes. Full screen on a tile makes the stage full screen in
   the focus layout, with the other shares as thumbnails that show on hover.
 - **Phones** cannot capture the screen, so the share button is disabled there and phones watch.
 

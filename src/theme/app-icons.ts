@@ -53,6 +53,7 @@ export {
   Logout03Icon as KickRoomMemberIcon,
   ArrowDown01Icon as ExpandSectionIcon,
   CenterFocusIcon as FocusShareIcon,
+  LayoutGridIcon as ShowSharesSideBySideIcon,
   Exchange01Icon as ChangeSharedScreenIcon,
   LogoutSquare01Icon as ExitRoomIcon,
   VolumeMute02Icon as MuteEverythingIcon,
