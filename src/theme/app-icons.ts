@@ -1,7 +1,13 @@
 export {
   Add01Icon as AddIcon,
   Alert02Icon as WarningIcon,
+  ArrowLeft01Icon as ArrowLeftIcon,
   ArrowRight01Icon as ArrowRightIcon,
+  Clock01Icon as PendingIcon,
+  MailOpen01Icon as EmailNotificationIcon,
+  Tick02Icon as ApproveIcon,
+  UserBlock01Icon as DenyIcon,
+  UserCheck01Icon as UserApprovalsIcon,
   Cancel01Icon as CloseIcon,
   CallEnd01Icon as LeaveCallIcon,
   CheckmarkCircle02Icon as SuccessIcon,
