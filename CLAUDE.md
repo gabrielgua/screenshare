@@ -41,6 +41,9 @@ working on capture, streaming or signalling features.
 
 Mobile browsers cannot capture the screen, so phones can watch streams but not share.
 
+A Windows desktop app in `desktop/` wraps the same web app in Electron, like Discord does, and
+adds a native picker and per app audio. See the Windows desktop app section.
+
 ### Delivery plan
 
 1. **Design system** (done): theme tokens, typography, buttons, inputs, icons, dark mode.
@@ -49,28 +52,49 @@ Mobile browsers cannot capture the screen, so phones can watch streams but not s
 4. **Approval emails**: email users when their account is approved. Not built yet.
 5. **Rooms** (done): create rooms, share links, manage names and members, and see who is in
    each room right now with Supabase Realtime presence.
-6. **Screen sharing** (current) with `getDisplayMedia` and WebRTC.
+6. **Screen sharing** (done) with `getDisplayMedia` and WebRTC.
+7. **Windows desktop app** (current): Electron shell with a window picker and the audio of only
+   the shared app.
 
 ## Commands
 
 This project uses **pnpm**. Never use npm or yarn, and never create `package-lock.json` or
 `yarn.lock`. The pinned version is in the `packageManager` field of `package.json`.
 
+The repository holds three parts: the Vue app in `web/`, the Electron app in `desktop/` and the
+Supabase backend in `supabase/`. `web/` and `desktop/` are separate pnpm projects with their own
+lock files. The small root `package.json` holds only the Supabase CLI and forwards the everyday
+scripts to `web/`, so run these from the root:
+
 ```sh
-pnpm install          # install dependencies
-pnpm dev              # start the Vite dev server
-pnpm build            # type-check and build for production
+pnpm install          # install the Supabase CLI, then the web app's dependencies
+pnpm dev              # start the Vite dev server for web/
+pnpm build            # type-check and build web/ for production
 pnpm type-check       # run vue-tsc only
-pnpm format           # format src/ with Prettier
-pnpm add <package>    # add a dependency, use -D for dev dependencies
+pnpm format           # format web/src/ with Prettier
+pnpm supabase <args>  # run the Supabase CLI
 ```
 
+Add web dependencies inside `web/` with `pnpm add <package>`, using `-D` for dev dependencies.
+
 Always run `pnpm build` before declaring work done. It must pass with no type errors.
+
+The desktop app is a separate pnpm project. Run these inside `desktop/`:
+
+```sh
+pnpm install          # install Electron, Forge and the native build tools
+pnpm build            # compile the native addon, type-check and bundle main and preload
+pnpm dev              # open the app against the local Vite dev server
+pnpm start            # open the app against production
+pnpm make             # build the Squirrel installer in out/make
+```
+
+Building the native addon needs the Visual Studio C++ Build Tools and a Windows 10 SDK.
 
 ## Project structure
 
 ```
-src/
+web/src/
   theme/
     theme.css              Design tokens: colors, typography, radii, shadows, dark variant
     component-sizes.ts     ControlSize and IconSize unions, shared by many components
@@ -97,6 +121,9 @@ src/
                            title and a header slot for tabs). It always takes 80% of the screen
                            height and scrolls its content. The panel slides up in 200ms with
                            ease-out and no bounce, and the content bounces in after 200ms.
+    menu/                  BaseDropdownMenu (a button that opens a menu panel, closed by
+                           Escape or a click outside, with arrow key navigation) and
+                           BaseDropdownMenuItem (one menu row with an icon, neutral or danger)
     segmented-control/     BaseSegmentedControl (generic segmented control bound with v-model,
                            as tabs or as single choice options)
     toast/                 BaseToast and ToastViewport (mounted once in App.vue)
@@ -116,8 +143,9 @@ src/
     room-details/          Admin room page: header, information and actions
     illustration/          IllustrationScene (friendly, blocked and paused moods) and the
                            pending, denied and deactivated illustrations
-    authentication/        DiscordSignInButton, SignedInUserMenu, SignedInUserAvatar,
-                           SignOutButton
+    authentication/        DiscordSignInButton, SignedInUserAvatar, AccountMenu (the header's
+                           account dropdown) and SignedInUserProfileSummary (avatar, name,
+                           email and join date, shared by the dropdown and the phone drawer)
     account-status/        AccountStatusNotice and the pending, denied, deactivated and load
                            error notices
     user-approvals/        Admin approvals: list, card and review dialog
@@ -130,8 +158,13 @@ src/
     screen-share/          The room's screen sharing area: stage (empty state, side by side or
                            focus layout, immersive full screen), tiles with their video and
                            hover controls, the control bar and the share dialog
-    home/                  SignedOutHero, SignedInDashboard (welcome plus the user's rooms)
-    layout/                AppHeader, AppBrandMark, HomeLink, PageContainer (regular or full
+    desktop-app/           DesktopAppDownloadButton and DesktopAppPromotionCard, the home page
+                           card that says the app works best on the Windows app
+    home/                  SignedOutHero and the approved home page: SignedInDashboard,
+                           HomeHero (greeting, create or open your room, all rooms, and
+                           JoinRoomForm for pasted room links), LiveRoomsSection with
+                           LiveRoomCard, and GettingStartedSection for users without rooms
+    layout/                AppHeader, AppBrandMark, HeaderNavigationLink, PageContainer (regular or full
                            width), PageLoadingSpinner,
                            PageTransition, StaggeredListTransition
     theme/                 ColorSchemeToggle
@@ -145,7 +178,11 @@ src/
   audio/                   notification-sounds.ts: short chimes generated with the Web Audio API
   media/                   Screen capture and WebRTC: quality settings, getDisplayMedia, one
                            peer connection per person (room-peer-link.ts) and the mesh that
-                           keeps them in sync with presence (room-peer-mesh.ts)
+                           keeps them in sync with presence (room-peer-mesh.ts).
+                           desktop-bridge-contract.ts is the typed contract with the desktop
+                           app, desktop-bridge.ts reads it, and application-audio-track.ts
+                           turns the desktop app's captured audio into a track through
+                           application-audio-worklet.ts
   services/                supabase-client.ts and *-service.ts files that talk to Supabase
   formatting/              Pure display formatters, like date-time.ts and member-count.ts
   stores/                  *-store.ts Pinia stores
@@ -173,6 +210,14 @@ src/
 supabase/
   config.toml              Supabase project settings, pushed with the CLI
   migrations/              SQL migrations, applied with pnpm supabase db push
+desktop/                   Windows desktop app, its own pnpm project
+  source/main/             Electron main process: window, trusted navigation, capture sources,
+                           the native audio relay and the bridge handlers
+  source/preload/          Exposes window.screenshareDesktop to the app
+  source/shared/           IPC channel names shared by main and preload
+  native/application-audio/  C++ addon that captures one process tree's audio with WASAPI
+                           application loopback
+  forge.config.js          Electron Forge packaging and the Squirrel installer
 ```
 
 ## Supabase
@@ -184,7 +229,7 @@ The backend is the Supabase project `screenshare`, reference `xergqwhbwljvbvijbo
 - **Config:** `supabase/config.toml` is the source of truth for project settings. Every value it
   declares overwrites the live project on push. Always run `pnpm supabase config diff` first and
   push only when the diff contains nothing but the intended changes.
-- **Frontend env:** the gitignored `.env.local` holds `VITE_SUPABASE_URL` and
+- **Frontend env:** the gitignored `web/.env.local` holds `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY`. Get the key with
   `pnpm supabase projects api-keys --project-ref xergqwhbwljvbvijbold`.
 - **Secrets:** secrets are stored in the Supabase dashboard, never on disk. Never write a secret
@@ -314,7 +359,15 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
 - **Links while signed out:** Discord sign in returns to the page it started from, so a shared
   room link survives sign in. The Supabase config allows `http://localhost:5173/**` as a
   redirect for that. Add the production address with `/**` once deployed.
-- **Frontend:** the approved home page is the rooms dashboard. `/rooms/:roomId` shows a sign in
+- **Home page:** a launchpad, not a room list. The hero greets the user and offers Create a room
+  (or Open your room once a member owns one), All your rooms and a field that joins any pasted
+  room link. Below it the centered Windows app card, on Windows only. Then Live now lists only
+  the user's rooms that have people in them right now, sharers first, with who is sharing
+  (`useRoomsPresence` watches every room at once). Users without rooms see How it works instead.
+- **Rooms page:** `/rooms` lists every room the user created or joined, with Create a room. It
+  needs an approved user (`meta.requiresApprovedUser`), and the header and the phone menu link
+  to it.
+- **Frontend:** `/rooms/:roomId` shows a sign in
   prompt, an approval notice, a not found notice, a blocked notice, the join invitation or the
   room itself. The room page uses the full width of the screen: the stage, where screen sharing
   will go, fills the left, and `RoomSidebar` sits on the right. The sidebar holds the room name,
@@ -333,9 +386,13 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
 - **Sidebar animation:** the sidebar card animates its width, while its expanded and collapsed
   contents keep a fixed width (`w-80` and `w-20`, with `box-content` on the card) and are
   clipped. That way nothing reflows or shows scrollbars mid animation.
+- **Header:** from `sm` up the header shows the brand, Home, Rooms and Admin, and one account button
+  with the avatar and name. It opens `AccountMenu`, a `BaseDropdownMenu` with the profile summary
+  (email and join date), the color scheme switch, Get the Windows app on Windows and Sign out.
+  Keep the header to these pieces so it never gets crowded.
 - **Phone header:** below `sm` the app header shows only the brand, the avatar and a menu
-  button. `AppMobileMenu` opens a `BaseDrawer` with the user, Home, Admin with the pending count,
-  the color scheme switch and Sign out.
+  button. `AppMobileMenu` opens a `BaseDrawer` with the same profile summary, Home, Admin with
+  the pending count, the color scheme switch and Sign out.
 - **Full width pages:** routes with `meta.usesFullWidthLayout` widen the header, and their view
   passes `width="full"` to `PageContainer`.
 - **Admin rooms:** the dashboard shows admins only their own rooms. `/admin/rooms` lists every
@@ -389,11 +446,65 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
 - **Phones** cannot capture the screen, so `canCaptureScreen()` also rules out touch only devices
   (no hover and a coarse pointer) and the share button is not shown there at all. Phones watch.
 - **Fitting the stage:** the stage area is a size container (`stage-fit-area`) and the stage uses
-  `video-fit-frame`, which takes the largest 16:9 box that fits both its width and height. Room
+  `video-fit-frame`, which takes the largest 16:9 box that fits both its width and height. The
+  area's grid has one `minmax(0, 1fr)` row and column (`grid-rows-1 grid-cols-1`), so the stage's
+  full size is the area's size and never the video's: without it a tall shared window, like
+  Spotify, grew past the screen and covered the room bar. The 16:9 box is only for a single
+  share: with two or more, side by side or focused, the stage fills the whole area, so narrow
+  windows and phones stack full width shares instead of squeezing them into one small box. In
+  short landscape the focus layout's thumbnail strip shrinks to `h-16`. Room
   pages are pinned to the window height (`h-dvh`) on every screen size so that box always fits.
   Phones held sideways match the `short-landscape` variant (landscape and at most 500px tall):
   the app header hides on the room page, the room bar puts the name and presence on one line,
   and the spacing tightens, so the whole share stays visible.
+
+## Windows desktop app
+
+- **Why:** browsers give one mixed audio track and never one app's sound. Discord's desktop app
+  captures a single app's audio natively, so we do the same. The research is in
+  `docs/discord-screenshare-research.md`.
+- **Shell:** Electron loads the production site, or `SCREENSHARE_APP_URL` when set, so the
+  desktop app always runs the deployed web app. Context isolation and the sandbox are on. Only the
+  app origin, `discord.com` and `*.supabase.co` open inside the window, for Discord sign in.
+  Everything else opens in the default browser.
+- **Bridge:** the preload exposes `window.screenshareDesktop`, typed by
+  `web/src/media/desktop-bridge-contract.ts`. The main process answers only when the request comes
+  from the app origin. The web app checks for it with `readDesktopBridge()`, so the browser
+  version is unchanged.
+- **Picker:** the share dialog shows `DesktopSourcePicker`, with Screens and Windows tabs, live
+  thumbnails and app icons from `desktopCapturer`. Screenshare's own window is left out. The
+  chosen source is handed to `setDisplayMediaRequestHandler`, and `getDisplayMedia` then returns
+  it without the browser picker.
+- **Audio:** the native addon activates `VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK` with
+  `ActivateAudioInterfaceAsync`, the same Windows API Discord's voice engine uses. A window
+  captures its process tree only. A screen captures every app except Screenshare's own process
+  tree, so viewers never hear their own sound back. Samples are 48 kHz stereo floats. They travel
+  from the main process through a `MessagePort` straight into an AudioWorklet, which plays them
+  into a `MediaStreamTrack` that WebRTC sends like any other track. The worklet keeps 40 to
+  200ms of audio buffered.
+- **Title bar:** the window hides the Windows title bar (`titleBarStyle: 'hidden'`) and keeps only
+  the native minimize, maximize and close buttons, drawn over the page at the header's 64px
+  height. `AppHeader` is the top bar: `window-drag-region` lets you drag the window by it while
+  links and buttons stay clickable, and `window-controls-clearance` leaves room for the buttons
+  through the `titlebar-area-*` environment values, which are zero in browsers. Open dialogs are
+  never drag regions. `useDesktopWindowControls` sends the color scheme to the main process,
+  which paints the buttons with the body colors of light and dark mode. In the desktop app the
+  header always spans the full window width.
+- **Older sites:** when a page asks for a capture without picking a source, which is what a site
+  without the desktop picker does, the main process shares the main screen, with system audio if
+  it was requested, instead of failing.
+- **Captures by id:** every audio capture gets an id. Stopping an old share never stops the one
+  that replaced it.
+- **Limits:** Windows 10 version 2004 or newer. Apps whose window and audio live in unrelated
+  processes, like some Store apps, may share no sound. Capture failures are logged by the main
+  process, and the share continues without sound.
+- **Downloads:** Windows browsers that are not touch only see the home page card, the item in
+  the account menu and the hint in the share dialog. Phones, tablets and the desktop app itself
+  never show them (`canInstallDesktopApp()`). They all link to
+  `ScreenshareSetup.exe` on the latest GitHub release. The installer is unsigned, so Windows
+  SmartScreen warns on first run until it is code signed.
+- **Updates:** the installed app checks `update.electronjs.org` against this public repository's
+  releases with `update-electron-app`, and Squirrel installs new versions on restart.
 
 ## Releases
 
@@ -407,10 +518,14 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
 - **Version:** `.github/scripts/decide-next-release-version.sh` reads the labels of the merged pull
   requests. `breaking` bumps the major version, `feature` the minor version and anything else
   the patch version. The first release is `v0.1.0`.
+- **Windows app:** after the release is created, the `windows-app` job builds the desktop app on
+  a Windows runner with the release version and uploads `ScreenshareSetup.exe`, the `.nupkg` and
+  `RELEASES` to it. Those files are what the download link and the auto updater use.
 
 ## Deployment
 
-- **Host:** the frontend is a static Vite build deployed on Vercel. `vercel.json` sets the pnpm
+- **Host:** the frontend is a static Vite build deployed on Vercel, with the project's Root
+  Directory set to `web`. `web/vercel.json` sets the pnpm
   install and build commands, the `dist` output, a rewrite to `index.html` so room links work on
   refresh, long caching for hashed assets, and security headers that still allow screen capture
   and full screen.
@@ -419,7 +534,7 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   security protects the data, but neither value lives in the repository. Set them in Vercel's
   project environment variables, or in `.env.local` locally, using `.env.example` as the
   template. `vite.config.ts` stops a build when either is missing, and
-  `src/services/public-environment.ts` reads them with a clear error. The Supabase secret key is
+  `web/src/services/public-environment.ts` reads them with a clear error. The Supabase secret key is
   never used by the frontend.
 - **Project:** Vercel project `screenshare` in the personal scope `gabrielguas-projects`, linked
   to the GitHub repository. Pushes to `main` deploy production at
@@ -441,7 +556,7 @@ There is no design system page. The components and their props below are the ref
 
 ### Theme tokens
 
-Defined in `src/theme/theme.css` with Tailwind v4 `@theme`. Use them as normal Tailwind classes.
+Defined in `web/src/theme/theme.css` with Tailwind v4 `@theme`. Use them as normal Tailwind classes.
 
 - **Colors:** `brand`, `neutral`, `danger`, `success`, `warning`, each with a `50` to `950` scale.
   Examples: `bg-brand-600`, `text-neutral-500`, `border-danger-500`.
@@ -501,11 +616,11 @@ The modal is mounted once in `App.vue`. Success closes itself after 2.5 seconds 
 use `useToastStore().showToast()` instead: toasts sit at the top center on desktop and the
 bottom on phones, and close themselves after 4 seconds. Pass `{ shouldAutoClose: false }` as the third argument when
 the reader needs time, like a link to copy by hand: the bar is replaced by a Close button. Turn unknown errors into text with `describeError` from
-`src/services/describe-error.ts`.
+`web/src/services/describe-error.ts`.
 
 ### Dark mode
 
-- `useColorScheme` in `src/composables/use-color-scheme.ts` wraps VueUse `useDark`. It adds the
+- `useColorScheme` in `web/src/composables/use-color-scheme.ts` wraps VueUse `useDark`. It adds the
   `dark` class on `<html>` and remembers the choice in local storage.
 - Tailwind's `dark:` variant is bound to that class in `theme.css` with `@custom-variant`.
 - Every component writes its dark styles inline with `dark:` classes.
@@ -528,11 +643,11 @@ Typography:
 
 ### Adding a new component
 
-1. Put design system components in `src/components/<group>/` with the `Base` prefix. There is no
+1. Put design system components in `web/src/components/<group>/` with the `Base` prefix. There is no
    `base/` folder.
 2. Write variation types as plain unions. Export component-owned ones from inside its single
    `<script setup lang="ts">`, like `export type ButtonShape = 'rounded' | 'circle'`. Only types
-   shared by unrelated components go in `src/theme/`.
+   shared by unrelated components go in `web/src/theme/`.
 3. Write defaults as literals in `withDefaults`.
 4. Put shared classes straight on the element's `class` attribute. Map only what varies with a
    `Record`, and never repeat a class in every entry. Never create separate `*-classes.ts` files.
@@ -561,7 +676,7 @@ English only, a short description, labels, and before and after screenshots for 
 sizes the default stroke shrinks to about 1px, lands between screen pixels and looks fuzzy next to
 semibold text. Never render `HugeiconsIcon` directly, so every icon keeps this weight.
 
-Import it from `@hugeicons/core-free-icons` inside `src/theme/app-icons.ts` and export it under a
+Import it from `@hugeicons/core-free-icons` inside `web/src/theme/app-icons.ts` and export it under a
 name that describes its meaning in the app, like `ShareScreenIcon`. Components import icons only
 from `app-icons.ts`.
 

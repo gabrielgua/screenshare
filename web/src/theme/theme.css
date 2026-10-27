@@ -1,0 +1,172 @@
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 500px));
+
+@theme {
+  --font-sans: 'Onest', ui-sans-serif, system-ui, sans-serif;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-subtitle: 1.25rem;
+  --text-subtitle--line-height: 1.75rem;
+  --text-title: 1.75rem;
+  --text-title--line-height: 2.25rem;
+  --text-display: 2.5rem;
+  --text-display--line-height: 1.1;
+
+  --color-brand-50: #eef0fe;
+  --color-brand-100: #dfe2fd;
+  --color-brand-200: #c4c9fb;
+  --color-brand-300: #a1a8f8;
+  --color-brand-400: #7d85f5;
+  --color-brand-500: #5865f2;
+  --color-brand-600: #4752d6;
+  --color-brand-700: #3a43b0;
+  --color-brand-800: #31388d;
+  --color-brand-900: #2c3270;
+  --color-brand-950: #1b1e42;
+
+  --color-neutral-50: #f7f7f8;
+  --color-neutral-100: #ebebed;
+  --color-neutral-200: #d4d5d9;
+  --color-neutral-300: #b5b7bd;
+  --color-neutral-400: #8e9199;
+  --color-neutral-500: #6d7079;
+  --color-neutral-600: #555861;
+  --color-neutral-700: #3f4148;
+  --color-neutral-800: #2b2d31;
+  --color-neutral-900: #1e1f22;
+  --color-neutral-950: #111214;
+
+  --color-danger-50: var(--color-red-50);
+  --color-danger-100: var(--color-red-100);
+  --color-danger-200: var(--color-red-200);
+  --color-danger-300: var(--color-red-300);
+  --color-danger-400: var(--color-red-400);
+  --color-danger-500: var(--color-red-500);
+  --color-danger-600: var(--color-red-600);
+  --color-danger-700: var(--color-red-700);
+  --color-danger-800: var(--color-red-800);
+  --color-danger-900: var(--color-red-900);
+  --color-danger-950: var(--color-red-950);
+
+  --color-success-50: var(--color-emerald-50);
+  --color-success-100: var(--color-emerald-100);
+  --color-success-200: var(--color-emerald-200);
+  --color-success-300: var(--color-emerald-300);
+  --color-success-400: var(--color-emerald-400);
+  --color-success-500: var(--color-emerald-500);
+  --color-success-600: var(--color-emerald-600);
+  --color-success-700: var(--color-emerald-700);
+  --color-success-800: var(--color-emerald-800);
+  --color-success-900: var(--color-emerald-900);
+  --color-success-950: var(--color-emerald-950);
+
+  --color-warning-50: var(--color-amber-50);
+  --color-warning-100: var(--color-amber-100);
+  --color-warning-200: var(--color-amber-200);
+  --color-warning-300: var(--color-amber-300);
+  --color-warning-400: var(--color-amber-400);
+  --color-warning-500: var(--color-amber-500);
+  --color-warning-600: var(--color-amber-600);
+  --color-warning-700: var(--color-amber-700);
+  --color-warning-800: var(--color-amber-800);
+  --color-warning-900: var(--color-amber-900);
+  --color-warning-950: var(--color-amber-950);
+
+  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+
+  --shadow-card: 0 1px 2px rgb(17 18 20 / 0.06), 0 4px 16px rgb(17 18 20 / 0.06);
+
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-pop-in: pop-in 500ms var(--ease-bounce) both;
+  --animate-shrink-to-start: shrink-to-start linear both;
+
+  @keyframes shrink-to-start {
+    from {
+      scale: 1 1;
+    }
+    to {
+      scale: 0 1;
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      scale: 0.4;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-neutral-50 font-sans text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+  }
+
+  dialog[open] {
+    app-region: no-drag;
+  }
+}
+
+@utility window-drag-region {
+  app-region: drag;
+
+  & :is(a, button, input, select, textarea, [role='button']) {
+    app-region: no-drag;
+  }
+}
+
+@utility window-controls-clearance {
+  padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+}
+
+@utility scrollbar-thin-on-hover {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 150ms ease-in;
+
+  &:hover {
+    scrollbar-color: var(--color-neutral-300) transparent;
+  }
+
+  &:where(.dark, .dark *):hover {
+    scrollbar-color: var(--color-neutral-700) transparent;
+  }
+}
+
+@utility scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+@utility scrollbar-gutter-balanced {
+  scrollbar-gutter: stable both-edges;
+}
+
+@utility range-vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+@utility stage-fit-area {
+  container-type: size;
+}
+
+@utility video-fit-frame {
+  width: min(100cqw, 100cqh * 16 / 9);
+  aspect-ratio: 16 / 9;
+}

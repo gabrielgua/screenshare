@@ -42,3 +42,6 @@ __screenshots__/
 .vercel
 .env*
 !.env.example
+desktop/build/
+desktop/out/
+desktop/native/application-audio/build/
