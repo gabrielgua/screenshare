@@ -9,6 +9,7 @@ import { useScreenShareStore } from '@/stores/screen-share-store'
 import {
   ExitFullscreenIcon,
   FocusShareIcon,
+  ShowSharesSideBySideIcon,
   FullscreenShareIcon,
   HideOwnShareIcon,
   SoundOffIcon,
@@ -27,7 +28,7 @@ const props = withDefaults(defineProps<ScreenShareTileControlsProps>(), {
 })
 
 const emit = defineEmits<{
-  focusRequested: []
+  focusToggleRequested: []
   fullscreenToggleRequested: []
 }>()
 
@@ -60,7 +61,7 @@ function handleHideOwnShareButtonClick() {
 }
 
 function handleFocusButtonClick() {
-  emit('focusRequested')
+  emit('focusToggleRequested')
 }
 
 function handleFullscreenButtonClick() {
@@ -118,9 +119,11 @@ function handleFullscreenButtonClick() {
       />
     </div>
     <BaseIconButton
-      v-if="!isFocused && !isFullscreen"
-      :icon="FocusShareIcon"
-      :accessible-label="`Focus ${screenShare.displayName}'s screen`"
+      v-if="!isFullscreen"
+      :icon="isFocused ? ShowSharesSideBySideIcon : FocusShareIcon"
+      :accessible-label="
+        isFocused ? 'Show screens side by side' : `Focus ${screenShare.displayName}'s screen`
+      "
       variant="neutral"
       appearance="ghost"
       @click="handleFocusButtonClick"
