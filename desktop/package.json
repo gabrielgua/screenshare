@@ -1,0 +1,36 @@
+{
+  "name": "screenshare-desktop",
+  "productName": "Screenshare",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Screenshare for Windows, with per app audio sharing",
+  "author": "gabrielgua",
+  "license": "UNLICENSED",
+  "main": "build/main.cjs",
+  "packageManager": "pnpm@11.17.0",
+  "scripts": {
+    "build-native": "node-gyp rebuild --directory native/application-audio",
+    "build-scripts": "node scripts/build-desktop-scripts.mjs",
+    "build": "pnpm build-native && pnpm type-check && pnpm build-scripts",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "start": "pnpm build && electron-forge start",
+    "dev": "pnpm build && cross-env SCREENSHARE_APP_URL=http://localhost:5173 electron-forge start",
+    "package": "pnpm build && electron-forge package",
+    "make": "pnpm build && electron-forge make"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "update-electron-app": "^3.3.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^8.0.1",
+    "@electron-forge/maker-squirrel": "^8.0.1",
+    "@types/node": "^24.19.2",
+    "cross-env": "^10.1.0",
+    "electron": "^45.0.0",
+    "esbuild": "^0.28.2",
+    "node-addon-api": "^8.9.2",
+    "node-gyp": "^13.1.0",
+    "typescript": "^6.0.3"
+  }
+}

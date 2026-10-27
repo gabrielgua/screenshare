@@ -87,7 +87,7 @@ Every pull request gets at least one type label and one area label.
 | `refactor` | type | Restructures code without changing behavior |
 | `breaking` | type | Breaks existing behavior, bumps the major version |
 | `release` | type | The `homolog` to `main` pull request, left out of release notes |
-| `frontend` | area | Touches `src/` or anything the user sees |
+| `frontend` | area | Touches `web/src/` or anything the user sees |
 | `backend` | area | Touches Supabase, database, functions or auth configuration |
 
 Labels decide where a pull request lands in the GitHub release notes and which version number
