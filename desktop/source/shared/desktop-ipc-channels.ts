@@ -1,0 +1,6 @@
+export const LIST_CAPTURE_SOURCES_CHANNEL = 'desktop-capture:list-sources'
+export const SELECT_CAPTURE_SOURCE_CHANNEL = 'desktop-capture:select-source'
+export const START_APPLICATION_AUDIO_CHANNEL = 'application-audio:start'
+export const STOP_APPLICATION_AUDIO_CHANNEL = 'application-audio:stop'
+export const APPLICATION_AUDIO_PORT_CHANNEL = 'application-audio:port'
+export const SET_WINDOW_CONTROLS_COLOR_SCHEME_CHANNEL = 'window-controls:set-color-scheme'

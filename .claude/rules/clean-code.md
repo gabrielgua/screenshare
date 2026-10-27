@@ -32,19 +32,19 @@ without any extra documentation.
 - **The rule of two:** the moment something is used twice, promote it to a component, composable
   or constant. Do not wait for a third copy.
 - Components stay small and focused on one job. If a template needs scrolling to read, split it.
-- Components live in `src/components/<group>/`, one folder per group (`button/`, `form/`,
+- Components live in `web/src/components/<group>/`, one folder per group (`button/`, `form/`,
   `typography/`). There is no `base/` folder. Design system building blocks are prefixed with
   `Base` (`BaseButton`, `BaseInput`). Feature components live in a folder named after the feature.
-- Views in `src/views/` only compose components. They hold no styling decisions of their own.
+- Views in `web/src/views/` only compose components. They hold no styling decisions of their own.
 
 ## 4. Use the design system, never raw styling
 
-- Colors, typography, radii and shadows come from the theme tokens in `src/theme/theme.css`.
+- Colors, typography, radii and shadows come from the theme tokens in `web/src/theme/theme.css`.
   Never hardcode hex colors or arbitrary Tailwind values like `text-[#5865F2]` in components.
 - Text is rendered with `BaseHeading` and `BaseText`, never a raw `<h1>` or `<p>` with ad-hoc
   classes.
 - Clickable actions use `BaseButton` or `BaseIconButton`. Form fields use `BaseInput` or
-  `BaseTextarea`. Icons use `BaseIcon` with names from `src/theme/app-icons.ts`.
+  `BaseTextarea`. Icons use `BaseIcon` with names from `web/src/theme/app-icons.ts`.
 - Every component supports dark mode through Tailwind `dark:` variants. Dark mode is driven by the
   `dark` class that `useDark` from VueUse adds to `<html>`.
 - Every layout is mobile first: start with the phone layout, then add `sm:`, `md:`, `lg:`
@@ -71,7 +71,7 @@ without any extra documentation.
 - A type that only one component owns is exported from **inside that component's
   `<script setup lang="ts">`**. Other files import it with
   `import BaseButton, { type ButtonType } from './BaseButton.vue'`.
-- Types shared by several unrelated components live in `src/theme/` (`ColorVariant`,
+- Types shared by several unrelated components live in `web/src/theme/` (`ColorVariant`,
   `ControlSize`, `TextTone`, ...).
 - Defaults are written as literals in `withDefaults` (`size: 'md'`). There are no `DEFAULT_*`
   constants for variants.
@@ -108,8 +108,8 @@ without any extra documentation.
 
 - Exactly one `<script setup lang="ts">` in every component. Props use `defineProps` with a typed
   interface and `withDefaults`. Two-way bindings use `defineModel`.
-- Shared reactive logic goes into composables named `use<Something>` in `src/composables/`,
+- Shared reactive logic goes into composables named `use<Something>` in `web/src/composables/`,
   in kebab-case files: `use-color-scheme.ts`.
-- Stores live in `src/stores/` as `<domain>-store.ts` and export `use<Domain>Store`.
+- Stores live in `web/src/stores/` as `<domain>-store.ts` and export `use<Domain>Store`.
 - No `any`. Prefer narrow union types over `string`.
 - Formatting follows `.prettierrc.json` (no semicolons, single quotes, 100 columns).
