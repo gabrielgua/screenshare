@@ -112,6 +112,7 @@ function handleFullscreenButtonClick() {
       <BaseIconButton
         :icon="isSilent ? SoundOffIcon : SoundOnIcon"
         :accessible-label="muteButtonLabel"
+        tooltip-placement="left"
         variant="neutral"
         appearance="ghost"
         :is-disabled="!hasAudio"
