@@ -62,6 +62,8 @@ function handleDetailsButtonClick() {
       <BaseIconButton
         :icon="InformationIcon"
         accessible-label="Room details"
+        tooltip-placement="bottom"
+        tooltip-alignment="end"
         variant="neutral"
         appearance="outlined"
         size="sm"

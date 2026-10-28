@@ -101,7 +101,16 @@ web/src/
     color-variants.ts      ColorVariant, Appearance, FieldStatus and TextTone unions
     app-icons.ts           Every icon the app uses, under a descriptive name
   components/
-    button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton)
+    button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton
+                           inside a BaseTooltip showing its accessible label)
+    tooltip/               BaseTooltip: wraps any trigger and shows a short label on hover or
+                           keyboard focus, never on touch. `placement` is top, bottom, left or
+                           right and `alignment` is start, center or end. It renders in the
+                           popover top layer, so scroll areas, tiles, dialogs and full screen
+                           never clip it, flips to the opposite side when it would leave the
+                           window, and hides on Escape, scroll, press or pointer leave. It
+                           matches the theme: white with dark text in light mode, dark gray
+                           with light text in dark mode, both with a border and shadow
     form/                  BaseFormField (owns field border classes), BaseInput, BaseTextarea,
                            BaseSlider is horizontal or vertical (`range-vertical` utility),
                            BaseSwitch (labelled on and off switch bound with v-model),

@@ -43,6 +43,8 @@ function handleSignOutButtonClick() {
   <BaseIconButton
     :icon="MenuIcon"
     accessible-label="Open the menu"
+    tooltip-placement="bottom"
+    tooltip-alignment="end"
     variant="neutral"
     appearance="ghost"
     @click="handleMenuButtonClick"

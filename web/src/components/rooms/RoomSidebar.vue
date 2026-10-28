@@ -47,6 +47,7 @@ function handleExpandButtonClick() {
       <BaseIconButton
         :icon="ExpandSidebarIcon"
         accessible-label="Expand the sidebar"
+        tooltip-placement="left"
         variant="neutral"
         appearance="ghost"
         size="sm"
@@ -63,6 +64,7 @@ function handleExpandButtonClick() {
         <BaseIconButton
           :icon="CollapseSidebarIcon"
           accessible-label="Collapse the sidebar"
+          tooltip-placement="left"
           variant="neutral"
           appearance="ghost"
           size="sm"

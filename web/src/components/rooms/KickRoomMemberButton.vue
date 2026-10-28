@@ -51,6 +51,7 @@ async function handleKickConfirmed() {
     v-bind="$attrs"
     :icon="KickRoomMemberIcon"
     :accessible-label="`Kick ${memberName} from the room`"
+    tooltip-placement="left"
     variant="warning"
     appearance="ghost"
     size="sm"
