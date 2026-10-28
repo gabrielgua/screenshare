@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { RoomPeerMesh } from '@/media/room-peer-mesh'
+import type { DesktopCaptureSource } from '@/media/desktop-bridge-contract'
 import { captureScreen, stopStream } from '@/media/screen-capture'
+import { describeCapturedSurface, type SharedSurface } from '@/media/shared-surface'
 import type { RemoteViewQuality, ScreenShareSettings } from '@/media/screen-share-quality'
 import { describeError } from '@/services/describe-error'
 import {
@@ -32,6 +34,7 @@ export const useScreenShareStore = defineStore('screen-share', () => {
     { mergeDefaults: true },
   )
   const localStream = shallowRef<MediaStream>()
+  const sharedSurface = ref<SharedSurface>()
   const remoteStreamsByUserId = shallowRef<Record<string, MediaStream>>({})
   const audioByUserId = ref<Record<string, ScreenShareAudio>>({})
   const layout = ref<ScreenShareLayout>('grid')
@@ -122,14 +125,15 @@ export const useScreenShareStore = defineStore('screen-share', () => {
     latestPresentUserIds = []
   }
 
-  async function startSharing(settings: ScreenShareSettings, desktopSourceId?: string) {
+  async function startSharing(settings: ScreenShareSettings, desktopSource?: DesktopCaptureSource) {
     isStartingShare.value = true
     captureErrorMessage.value = undefined
     try {
-      const capturedStream = await captureScreen(settings, desktopSourceId)
+      const capturedStream = await captureScreen(settings, desktopSource?.id)
       const previousStream = localStream.value
       shareSettings.value = settings
       localStream.value = capturedStream
+      sharedSurface.value = describeCapturedSurface(capturedStream, desktopSource)
       capturedStream.getVideoTracks()[0]?.addEventListener('ended', () => {
         if (localStream.value === capturedStream) {
           stopSharing()
@@ -153,6 +157,7 @@ export const useScreenShareStore = defineStore('screen-share', () => {
     peerMesh?.setLocalShare(undefined)
     stopStream(localStream.value)
     localStream.value = undefined
+    sharedSurface.value = undefined
     isOwnShareHidden.value = false
   }
 
@@ -210,6 +215,7 @@ export const useScreenShareStore = defineStore('screen-share', () => {
   return {
     shareSettings,
     localStream,
+    sharedSurface,
     remoteStreamsByUserId,
     layout,
     focusedUserId,

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import BaseIconButton from '@/components/button/BaseIconButton.vue'
-import BaseIcon from '@/components/icon/BaseIcon.vue'
-import BaseText from '@/components/typography/BaseText.vue'
-import { CloseIcon, DragHandleIcon } from '@/theme/app-icons'
+import MiniplayerWindowHeader from './MiniplayerWindowHeader.vue'
 
 interface InPageMiniplayerProps {
+  title: string
+  contentWidth: number
   contentHeight: number
 }
 
@@ -53,7 +52,7 @@ function handleHeaderPointerUp() {
   isMovingPanel.value = false
 }
 
-function handleCloseButtonClick() {
+function handleCloseRequested() {
   emit('closeRequested')
 }
 </script>
@@ -61,37 +60,29 @@ function handleCloseButtonClick() {
 <template>
   <section
     aria-label="Miniplayer"
-    class="fixed right-4 bottom-4 z-40 flex w-96 animate-pop-in flex-col overflow-hidden rounded-card border border-neutral-200 bg-white shadow-card motion-reduce:animate-none dark:border-neutral-800 dark:bg-neutral-900"
+    class="fixed right-4 bottom-4 z-40 animate-pop-in overflow-hidden bg-neutral-950 shadow-card motion-reduce:animate-none"
     :style="{
       transform: `translate(${panelOffset.horizontal}px, ${panelOffset.vertical}px)`,
     }"
   >
-    <header
-      class="flex touch-none items-center gap-2 border-b border-neutral-200 py-1 pr-1 pl-3 select-none dark:border-neutral-800"
-      :class="isMovingPanel ? 'cursor-grabbing' : 'cursor-grab'"
-      @pointerdown="handleHeaderPointerDown"
-      @pointermove="handleHeaderPointerMove"
-      @pointerup="handleHeaderPointerUp"
-      @pointercancel="handleHeaderPointerUp"
-    >
-      <BaseIcon :icon="DragHandleIcon" size="sm" class="text-neutral-400" />
-      <BaseText as="span" size="sm" weight="semibold" class="flex-1">Miniplayer</BaseText>
-      <BaseIconButton
-        :icon="CloseIcon"
-        accessible-label="Close the miniplayer"
-        tooltip-placement="top"
-        tooltip-alignment="end"
-        variant="neutral"
-        appearance="ghost"
-        size="sm"
-        @click="handleCloseButtonClick"
-      />
-    </header>
     <div
-      class="bg-neutral-100 transition-all duration-500 ease-bounce motion-reduce:transition-none dark:bg-neutral-950"
-      :style="{ height: `${contentHeight}px` }"
+      class="flex flex-col transition-all duration-500 ease-bounce motion-reduce:transition-none"
+      :style="{ width: `${contentWidth}px`, height: `${contentHeight}px` }"
     >
-      <slot />
+      <MiniplayerWindowHeader
+        :title="title"
+        can-close
+        class="touch-none"
+        :class="isMovingPanel ? 'cursor-grabbing' : 'cursor-grab'"
+        @pointerdown="handleHeaderPointerDown"
+        @pointermove="handleHeaderPointerMove"
+        @pointerup="handleHeaderPointerUp"
+        @pointercancel="handleHeaderPointerUp"
+        @close-requested="handleCloseRequested"
+      />
+      <div class="min-h-0 flex-1">
+        <slot />
+      </div>
     </div>
   </section>
 </template>

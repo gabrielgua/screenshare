@@ -27,7 +27,7 @@ const emptyListMessageByKind: Record<DesktopCaptureSourceKind, string> = {
   window: 'No open windows to share right now.',
 }
 
-const selectedSourceId = defineModel<string | undefined>('selectedSourceId', {
+const selectedSource = defineModel<DesktopCaptureSource | undefined>('selectedSource', {
   default: undefined,
 })
 
@@ -50,10 +50,10 @@ async function loadCaptureSources() {
   try {
     captureSources.value = await desktopBridge.listCaptureSources()
     const isSelectionStillListed = captureSources.value.some(
-      (captureSource) => captureSource.id === selectedSourceId.value,
+      (captureSource) => captureSource.id === selectedSource.value?.id,
     )
     if (!isSelectionStillListed) {
-      selectedSourceId.value = undefined
+      selectedSource.value = undefined
     }
   } catch (loadError) {
     loadErrorMessage.value = describeError(loadError, 'Could not list your screens and windows')
@@ -63,7 +63,7 @@ async function loadCaptureSources() {
 }
 
 function handleSourceSelected(sourceId: string) {
-  selectedSourceId.value = sourceId
+  selectedSource.value = captureSources.value.find((captureSource) => captureSource.id === sourceId)
 }
 
 function handleRefreshButtonClick() {
@@ -122,7 +122,7 @@ onMounted(loadCaptureSources)
       >
         <DesktopSourceOption
           :source="captureSource"
-          :is-selected="captureSource.id === selectedSourceId"
+          :is-selected="captureSource.id === selectedSource?.id"
           @selected="handleSourceSelected(captureSource.id)"
         />
       </li>

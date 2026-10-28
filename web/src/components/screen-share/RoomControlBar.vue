@@ -9,6 +9,7 @@ import { canCaptureScreen } from '@/media/screen-capture'
 import type { ScreenShareSettings } from '@/media/screen-share-quality'
 import { useActiveRoomStore } from '@/stores/active-room-store'
 import { useMiniplayerStore } from '@/stores/miniplayer-store'
+import type { DesktopCaptureSource } from '@/media/desktop-bridge-contract'
 import { useScreenShareStore } from '@/stores/screen-share-store'
 import {
   ChangeSharedScreenIcon,
@@ -73,9 +74,9 @@ function handleChangeShareButtonClick() {
 
 async function handleSettingsConfirmed(
   settings: ScreenShareSettings,
-  desktopSourceId: string | undefined,
+  desktopSource: DesktopCaptureSource | undefined,
 ) {
-  await screenShareStore.startSharing(settings, desktopSourceId)
+  await screenShareStore.startSharing(settings, desktopSource)
   if (!screenShareStore.captureErrorMessage) {
     isShareDialogOpen.value = false
   }

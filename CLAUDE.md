@@ -103,8 +103,10 @@ web/src/
   components/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton
                            inside a BaseTooltip showing its accessible label)
-    miniplayer/            MiniplayerHost (opens the floating window and teleports into it),
-                           MiniplayerPanel, MiniplayerTile, MiniplayerDropIndicator,
+    miniplayer/            MiniplayerHost (renders one window per group of shares),
+                           MiniplayerGroupWindow (opens a floating window and teleports into it),
+                           MiniplayerWindowHeader, MiniplayerPanel, MiniplayerTile,
+                           MiniplayerDragGhost,
                            InPageMiniplayer and MiniplayerActiveNotice
     tooltip/               BaseTooltip: wraps any trigger and shows a short label on hover or
                            keyboard focus, never on touch. `placement` is top, bottom, left or
@@ -492,25 +494,65 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   the stage, and when all of them are there the stage shows `MiniplayerActiveNotice` with
   Bring them back. Touch only devices never see any miniplayer button (`canUseMiniplayer()`).
 - **Where it floats:** `media/miniplayer-window.ts` opens an always-on-top window. Chrome and
-  Edge use Document Picture-in-Picture, the desktop app opens a child window named
+  Edge use Document Picture-in-Picture, the desktop app opens a child window named after
   `MINIPLAYER_WINDOW_NAME` that its main process allows with `alwaysOnTop`, and other browsers
   fall back to `InPageMiniplayer`, a panel dragged by its header. The app's style sheets are
-  copied into the window, its `dark` class follows the color scheme, and `MiniplayerHost`
+  copied into the window, its `dark` class follows the color scheme, and `MiniplayerGroupWindow`
   renders the panel into it with `Teleport`, so the same live streams play without
-  reconnecting. Tooltips measure the window they are in.
-- **Layout:** `miniplayer-store.ts` keeps the shares as rows. New shares stack one above the
-  other. Every tile is one absolutely placed layer sized by its row and column, so a layout
-  change only moves boxes, which glide with a bouncy CSS transition and never remount videos.
-- **Fitting the window:** `media/miniplayer-layout.ts` measures the content size that shows
-  every row without empty space, from each share's real video shape. The floating window opens
-  at that size and refits after every rearrangement and whenever a video's size changes. It
-  keeps the width the user chose and only changes the height, shrinking both sides when the
-  result would be taller than 90% of the screen. The in-page panel uses the same measure.
-- **Rearranging:** with two or more shares a grip shows on hover and the cursor turns into a
-  hand. `useMiniplayerTileDragging` lifts the grabbed tile under the pointer and finds the
-  nearest other tile and its closest edge, shown by `MiniplayerDropIndicator`. Dropping on the
-  left or right puts the share beside that one, and on the top or bottom puts it above or below.
-  Each tile only has the share's volume control (`ShareVolumeControl`, shared with the stage)
+  reconnecting. Tooltips measure the window they are in. Electron reports a zero size right
+  after `window.open`, so the opener waits until the window is laid out before measuring it.
+- **Window look:** every miniplayer is a slim 32px title bar (`MiniplayerWindowHeader`) above
+  the shares, which fill the rest edge to edge with no padding, borders or rounded corners. The
+  title says who is sharing what for a single share ("Opaco is sharing Spotify") and shows the
+  room name for pinned shares. In the desktop app the title bar is the window's own: miniplayer
+  windows hide the Windows title bar and keep the native minimize, maximize and close buttons
+  at 32px, painted in the app's color scheme like the main window. In Chrome the title bar sits
+  under the browser's Picture-in-Picture bar, and the in-page panel uses it as its drag handle
+  with a close button. Hover shows each share's name and controls.
+- **What is shared:** `media/shared-surface.ts` describes the capture as a screen, a window or a
+  tab, with the window's name when the desktop picker chose it (browsers never reveal it). The
+  sharer publishes it as `sharedSurface` on their presence, and viewers sanitize it, since
+  presence payloads come from clients.
+- **Pinned and separate windows:** `miniplayer-store.ts` keeps the shares in groups, and
+  `MiniplayerHost` renders one `MiniplayerGroupWindow` per group. New shares join the first
+  group, so they open pinned together. Only the desktop app can show several windows (the
+  bridge's `canOpenSeparateMiniplayers`), because a browser tab gets one Picture-in-Picture
+  window. There, each pinned tile has an unpin button at its top right that opens the share in
+  its own window beside the current one (on the left when the right side of its screen is
+  full, using the screen's real edges since other monitors can sit at negative coordinates),
+  and dragging a tile far outside its window unpins it where you let go. The first window opens
+  at the bottom right of the screen the app is on. Unpinned windows keep the tile width. A
+  window that holds one share moves when you drag its screen or its title bar. Dragging the
+  screen moves it through the bridge's `moveMiniplayerWindowBy`, which calls Electron's
+  `setPosition`: `window.moveTo` on a window without a visible frame adds its invisible resize
+  borders to the size on every move, so the window grew until it filled the screen. Dragging
+  the title bar is a native move that the main process reports through `onMiniplayerWindowMove`,
+  from Electron's `will-move` and `moved`, which fire only for moves by the user. Letting go close to a screen in another window pins it to that
+  side. `miniplayer-window-registry.ts` knows every open window, so a drag in one window
+  measures the tiles of the others in screen coordinates (`miniplayer-geometry.ts` and
+  `miniplayer-drop-targets.ts`).
+- **Layout:** each group keeps its shares as rows. New shares stack one above the other. Every
+  tile has the same width, shorter rows are centered, and every tile is one absolutely placed
+  layer sized by its row and column, so a layout change only moves boxes, which glide with a
+  bouncy CSS transition and never remount videos.
+- **Fitting the window:** `media/miniplayer-layout.ts` measures the content size that shows the
+  title bar and every row at the window's tile width without empty space, from each share's
+  real video shape. The window changes both width and height after every rearrangement and
+  whenever a video's size changes, so moving a share never resizes the screens. The tile width
+  only changes when the user resizes the window, and everything shrinks when the result would
+  pass 90% of the screen. The in-page panel uses the same measure. Windows without a visible
+  frame report invisible resize borders in `outerWidth` that `resizeTo` does not count, so each
+  window learns its real frame size from the first resize and corrects once.
+- **Rearranging:** a grip shows on hover and the cursor turns into a hand.
+  `useMiniplayerTileDragging` finds the nearest other tile and its closest edge while you drag.
+  The dragged share fades to half opacity with a dashed outline. In the browser it follows the
+  pointer, centered on it, inside the window. In the desktop app it stays in its slot, and
+  `MiniplayerDragGhost` shows a dashed, faded copy of it in a transparent, click-through window
+  (`DRAG_GHOST_WINDOW_NAME`) that follows the pointer anywhere on the screen. The drag state
+  lives in the store, so the target tile in any window grows a brand colored strip on the side
+  the share is coming from, with a bouncy transition. Dropping on the left or right puts the
+  share beside that one, and on the top or bottom puts it above or below. Each tile only has
+  the share's volume control (`ShareVolumeControl`, shared with the stage), the unpin button,
   and the button that puts it back in the room, which also returns you to the room page.
 - **No Vue transitions inside the window:** a backgrounded tab pauses the animation frames Vue
   transitions wait for, so the miniplayer animates with CSS transitions, `starting:` styles and
