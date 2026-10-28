@@ -170,3 +170,8 @@
   width: min(100cqw, 100cqh * 16 / 9);
   aspect-ratio: 16 / 9;
 }
+
+@utility shape-fit-frame {
+  width: min(100cqw, 100cqh * var(--frame-aspect-ratio));
+  aspect-ratio: var(--frame-aspect-ratio);
+}

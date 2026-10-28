@@ -79,12 +79,17 @@ function calculatePosition(
   }
 }
 
+function readViewport(): Window {
+  return triggerElement.value?.ownerDocument.defaultView ?? window
+}
+
 function fitsInViewport(position: TooltipPosition, tooltipWidth: number, tooltipHeight: number) {
+  const viewport = readViewport()
   return (
     position.top >= VIEWPORT_MARGIN_PIXELS &&
     position.left >= VIEWPORT_MARGIN_PIXELS &&
-    position.top + tooltipHeight <= window.innerHeight - VIEWPORT_MARGIN_PIXELS &&
-    position.left + tooltipWidth <= window.innerWidth - VIEWPORT_MARGIN_PIXELS
+    position.top + tooltipHeight <= viewport.innerHeight - VIEWPORT_MARGIN_PIXELS &&
+    position.left + tooltipWidth <= viewport.innerWidth - VIEWPORT_MARGIN_PIXELS
   )
 }
 
@@ -115,8 +120,9 @@ function placeTooltip() {
         tooltipWidth,
         tooltipHeight,
       )
-  tooltip.style.top = `${keepInsideViewport(chosenPosition.top, tooltipHeight, window.innerHeight)}px`
-  tooltip.style.left = `${keepInsideViewport(chosenPosition.left, tooltipWidth, window.innerWidth)}px`
+  const viewport = readViewport()
+  tooltip.style.top = `${keepInsideViewport(chosenPosition.top, tooltipHeight, viewport.innerHeight)}px`
+  tooltip.style.left = `${keepInsideViewport(chosenPosition.left, tooltipWidth, viewport.innerWidth)}px`
 }
 
 function showTooltip() {

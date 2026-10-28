@@ -12,7 +12,18 @@ const props = withDefaults(defineProps<ScreenShareVideoProps>(), {
   isMuted: false,
 })
 
+const emit = defineEmits<{
+  aspectRatioChanged: [aspectRatio: number]
+}>()
+
 const videoElement = ref<HTMLVideoElement>()
+
+function handleVideoShapeChange() {
+  const element = videoElement.value
+  if (element?.videoWidth && element.videoHeight) {
+    emit('aspectRatioChanged', element.videoWidth / element.videoHeight)
+  }
+}
 
 watch(
   [videoElement, () => props.stream],
@@ -44,5 +55,7 @@ watchEffect(() => {
     playsinline
     disablepictureinpicture
     class="size-full bg-neutral-950 object-contain"
+    @loadedmetadata="handleVideoShapeChange"
+    @resize="handleVideoShapeChange"
   />
 </template>

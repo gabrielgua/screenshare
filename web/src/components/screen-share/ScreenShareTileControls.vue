@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BaseIconButton from '@/components/button/BaseIconButton.vue'
-import BaseSlider from '@/components/form/BaseSlider.vue'
 import BaseIcon from '@/components/icon/BaseIcon.vue'
 import BaseText from '@/components/typography/BaseText.vue'
 import type { RoomScreenShare } from '@/composables/use-room-screen-sharing'
+import { canUseMiniplayer } from '@/media/miniplayer-window'
+import { useMiniplayerStore } from '@/stores/miniplayer-store'
 import { useScreenShareStore } from '@/stores/screen-share-store'
 import {
   ExitFullscreenIcon,
@@ -12,9 +13,11 @@ import {
   ShowSharesSideBySideIcon,
   FullscreenShareIcon,
   HideOwnShareIcon,
+  OpenMiniplayerIcon,
   SoundOffIcon,
   SoundOnIcon,
 } from '@/theme/app-icons'
+import ShareVolumeControl from './ShareVolumeControl.vue'
 
 interface ScreenShareTileControlsProps {
   screenShare: RoomScreenShare
@@ -34,26 +37,17 @@ const emit = defineEmits<{
 
 const screenShareStore = useScreenShareStore()
 
-const shareAudio = computed(() => screenShareStore.readAudio(props.screenShare.userId))
-const hasAudio = computed(() => (props.screenShare.stream?.getAudioTracks().length ?? 0) > 0)
-const isSilent = computed(
-  () => !hasAudio.value || shareAudio.value.isMuted || shareAudio.value.volume === 0,
-)
-const muteButtonLabel = computed(() => {
-  if (!hasAudio.value) {
-    return `${props.screenShare.displayName} is sharing without audio`
-  }
-  return isSilent.value
-    ? `Unmute ${props.screenShare.displayName}`
-    : `Mute ${props.screenShare.displayName}`
-})
-const shareVolume = computed({
-  get: () => (shareAudio.value.isMuted || !hasAudio.value ? 0 : shareAudio.value.volume),
-  set: (volume: number) => screenShareStore.setVolume(props.screenShare.userId, volume),
-})
+const miniplayerStore = useMiniplayerStore()
+const isMiniplayerAvailable = canUseMiniplayer()
 
-function handleMuteButtonClick() {
-  screenShareStore.toggleMuted(props.screenShare.userId)
+const miniplayerButtonLabel = computed(() =>
+  props.screenShare.isOwnShare
+    ? 'Watch your screen in the miniplayer'
+    : `Watch ${props.screenShare.displayName}'s screen in the miniplayer`,
+)
+
+function handleMiniplayerButtonClick() {
+  miniplayerStore.showShares([props.screenShare.userId])
 }
 
 function handleHideOwnShareButtonClick() {
@@ -70,13 +64,13 @@ function handleFullscreenButtonClick() {
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
+  <div class="flex flex-wrap items-center justify-end gap-1">
     <template v-if="screenShare.isOwnShare">
       <BaseText
         as="span"
         size="caption"
         weight="medium"
-        class="hidden items-center gap-1.5 px-2 sm:flex"
+        class="hidden items-center gap-1.5 px-2 @md/video-frame:flex"
         aria-live="polite"
       >
         <BaseIcon :icon="screenShareStore.isSharingAudio ? SoundOnIcon : SoundOffIcon" size="sm" />
@@ -94,31 +88,15 @@ function handleFullscreenButtonClick() {
         @click="handleHideOwnShareButtonClick"
       />
     </template>
-    <div v-if="!screenShare.isOwnShare" class="group/volume relative">
-      <div
-        class="absolute bottom-full left-1/2 hidden -translate-x-1/2 pb-2 group-focus-within/volume:block group-hover/volume:block"
-      >
-        <div
-          class="flex rounded-full border border-neutral-700 bg-neutral-900/90 px-2 py-3 shadow-card"
-        >
-          <BaseSlider
-            v-model="shareVolume"
-            orientation="vertical"
-            :accessible-label="`${screenShare.displayName} volume`"
-            :is-disabled="!hasAudio"
-          />
-        </div>
-      </div>
-      <BaseIconButton
-        :icon="isSilent ? SoundOffIcon : SoundOnIcon"
-        :accessible-label="muteButtonLabel"
-        tooltip-placement="left"
-        variant="neutral"
-        appearance="ghost"
-        :is-disabled="!hasAudio"
-        @click="handleMuteButtonClick"
-      />
-    </div>
+    <ShareVolumeControl v-if="!screenShare.isOwnShare" :screen-share="screenShare" />
+    <BaseIconButton
+      v-if="isMiniplayerAvailable && !isFullscreen"
+      :icon="OpenMiniplayerIcon"
+      :accessible-label="miniplayerButtonLabel"
+      variant="neutral"
+      appearance="ghost"
+      @click="handleMiniplayerButtonClick"
+    />
     <BaseIconButton
       v-if="!isFullscreen"
       :icon="isFocused ? ShowSharesSideBySideIcon : FocusShareIcon"

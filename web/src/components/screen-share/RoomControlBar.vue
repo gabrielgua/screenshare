@@ -3,8 +3,12 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseIconButton from '@/components/button/BaseIconButton.vue'
 import { useAppFullscreen } from '@/composables/use-app-fullscreen'
+import type { RoomScreenShare } from '@/composables/use-room-screen-sharing'
+import { canUseMiniplayer } from '@/media/miniplayer-window'
 import { canCaptureScreen } from '@/media/screen-capture'
 import type { ScreenShareSettings } from '@/media/screen-share-quality'
+import { useActiveRoomStore } from '@/stores/active-room-store'
+import { useMiniplayerStore } from '@/stores/miniplayer-store'
 import { useScreenShareStore } from '@/stores/screen-share-store'
 import {
   ChangeSharedScreenIcon,
@@ -13,6 +17,8 @@ import {
   ExitRoomIcon,
   HideOwnShareIcon,
   MuteEverythingIcon,
+  OpenMiniplayerIcon,
+  ReturnFromMiniplayerIcon,
   ShareScreenIcon,
   ShowOwnShareIcon,
   SoundOnIcon,
@@ -20,7 +26,16 @@ import {
 } from '@/theme/app-icons'
 import ShareScreenDialog, { type ShareScreenDialogPurpose } from './ShareScreenDialog.vue'
 
+interface RoomControlBarProps {
+  screenShares: RoomScreenShare[]
+}
+
+const props = defineProps<RoomControlBarProps>()
+
 const router = useRouter()
+const miniplayerStore = useMiniplayerStore()
+const activeRoomStore = useActiveRoomStore()
+const isMiniplayerAvailable = canUseMiniplayer()
 const screenShareStore = useScreenShareStore()
 const { isFullscreen: isAppFullscreen, toggle: toggleAppFullscreen } = useAppFullscreen()
 
@@ -78,7 +93,17 @@ function handleFullscreenButtonClick() {
   void toggleAppFullscreen()
 }
 
+function handleMiniplayerButtonClick() {
+  if (miniplayerStore.isOpen) {
+    miniplayerStore.close()
+    return
+  }
+  miniplayerStore.showShares(props.screenShares.map((screenShare) => screenShare.userId))
+}
+
 function handleExitRoomButtonClick() {
+  miniplayerStore.close()
+  activeRoomStore.leaveRoom()
   router.push({ name: 'home' })
 }
 </script>
@@ -125,6 +150,19 @@ function handleExitRoomButtonClick() {
       shape="circle"
       :is-pressed="screenShareStore.isOwnShareHidden"
       @click="handleOwnShareVisibilityButtonClick"
+    />
+    <BaseIconButton
+      v-if="isMiniplayerAvailable"
+      :icon="miniplayerStore.isOpen ? ReturnFromMiniplayerIcon : OpenMiniplayerIcon"
+      :accessible-label="
+        miniplayerStore.isOpen ? 'Close the miniplayer' : 'Watch every screen in the miniplayer'
+      "
+      variant="neutral"
+      appearance="outlined"
+      shape="circle"
+      :is-pressed="miniplayerStore.isOpen"
+      :is-disabled="screenShares.length === 0"
+      @click="handleMiniplayerButtonClick"
     />
     <BaseIconButton
       :icon="isAppFullscreen ? ExitFullscreenIcon : EnterFullscreenIcon"
