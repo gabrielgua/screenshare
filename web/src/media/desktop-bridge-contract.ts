@@ -26,4 +26,6 @@ export interface DesktopBridge {
 
 export const DESKTOP_BRIDGE_GLOBAL_NAME = 'screenshareDesktop'
 
+export const MINIPLAYER_WINDOW_NAME = 'screenshare-miniplayer'
+
 export const APPLICATION_AUDIO_PORT_MESSAGE_TYPE = 'screenshare-application-audio-port'

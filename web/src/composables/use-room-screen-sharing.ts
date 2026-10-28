@@ -2,7 +2,6 @@ import { computed, onScopeDispose, toValue, watch, type MaybeRefOrGetter, type R
 import type { PresentRoomUser } from '@/services/room-presence-service'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRoomPresenceStore } from '@/stores/room-presence-store'
-import { useRoomStore } from '@/stores/room-store'
 import { useScreenShareStore } from '@/stores/screen-share-store'
 
 export interface RoomScreenShare {
@@ -15,18 +14,17 @@ export interface RoomScreenShare {
 
 export function useRoomScreenSharing(
   presentUsers: Ref<PresentRoomUser[]>,
-  shouldConnect: MaybeRefOrGetter<boolean>,
+  roomId: MaybeRefOrGetter<string | undefined>,
 ) {
-  const roomStore = useRoomStore()
   const currentUserStore = useCurrentUserStore()
   const roomPresenceStore = useRoomPresenceStore()
   const screenShareStore = useScreenShareStore()
 
   watch(
-    () => [roomStore.room?.id, currentUserStore.currentUser?.id, toValue(shouldConnect)] as const,
-    ([roomId, currentUserId, isAllowedToConnect]) => {
-      if (roomId && currentUserId && isAllowedToConnect) {
-        screenShareStore.connectToRoom(roomId, currentUserId).catch(() => {
+    () => [toValue(roomId), currentUserStore.currentUser?.id] as const,
+    ([connectingRoomId, currentUserId]) => {
+      if (connectingRoomId && currentUserId) {
+        screenShareStore.connectToRoom(connectingRoomId, currentUserId).catch(() => {
           screenShareStore.disconnectFromRoom()
         })
         return
@@ -49,8 +47,9 @@ export function useRoomScreenSharing(
   watch(
     () => screenShareStore.isSharingScreen,
     (isSharingScreen) => {
-      if (roomStore.room?.id) {
-        roomPresenceStore.updateOwnPresence(roomStore.room.id, { isSharingScreen })
+      const sharingRoomId = toValue(roomId)
+      if (sharingRoomId) {
+        roomPresenceStore.updateOwnPresence(sharingRoomId, { isSharingScreen })
       }
     },
   )

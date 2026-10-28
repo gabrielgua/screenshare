@@ -103,6 +103,9 @@ web/src/
   components/
     button/                BaseButton (owns every button class), BaseIconButton (renders BaseButton
                            inside a BaseTooltip showing its accessible label)
+    miniplayer/            MiniplayerHost (opens the floating window and teleports into it),
+                           MiniplayerPanel, MiniplayerTile, MiniplayerDropIndicator,
+                           InPageMiniplayer and MiniplayerActiveNotice
     tooltip/               BaseTooltip: wraps any trigger and shows a short label on hover or
                            keyboard focus, never on touch. `placement` is top, bottom, left or
                            right and `alignment` is start, center or end. It renders in the
@@ -452,6 +455,14 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   showing lives in `screen-share-store.ts`, so it survives the tile being rebuilt when the layout
   changes. Full screen on a tile makes the stage full screen in
   the focus layout, with the other shares as thumbnails that show on hover.
+- **Controls fit the picture:** each tile wraps its video and its name and controls in
+  `FittedVideoFrame`, a box with the video's real shape (reported by `ScreenShareVideo`)
+  contained and centered in the tile with the `shape-fit-frame` utility. The controls are never
+  wider than the shared picture, even for tall windows with wide black bars. Stage and
+  miniplayer tiles both use it. The frame is a container named `video-frame`, so the overlay
+  responds to the picture's width, not the window's: the You are sharing with audio label needs
+  `@md/video-frame`, the name and avatar hide below `@3xs/video-frame`, and the buttons wrap onto
+  more rows instead of sticking out.
 - **Phones** cannot capture the screen, so `canCaptureScreen()` also rules out touch only devices
   (no hover and a coarse pointer) and the share button is not shown there at all. Phones watch.
 - **Fitting the stage:** the stage area is a size container (`stage-fit-area`) and the stage uses
@@ -466,6 +477,44 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   Phones held sideways match the `short-landscape` variant (landscape and at most 500px tall):
   the app header hides on the room page, the room bar puts the name and presence on one line,
   and the spacing tightens, so the whole share stays visible.
+
+## Miniplayer and the room session
+
+- **Room session:** being in a room no longer belongs to the room page. `active-room-store.ts`
+  holds the room you are in, and `ActiveRoomSession`, mounted once in `App.vue` and keyed by
+  room id, owns everything that keeps you there: your presence, the WebRTC connection, join and
+  leave notifications, kicks and the miniplayer. The room page starts the session for members
+  and reads the session's shares. Leaving the page ends the session, unless the miniplayer is
+  open, so you can browse Home or Rooms and keep watching. The Leave button, a kick, losing
+  membership, or closing the miniplayer while away from the room end it.
+- **Opening it:** the room bar's miniplayer button moves every share into the miniplayer, and
+  each share's tile has its own button to move just that one. Shares in the miniplayer leave
+  the stage, and when all of them are there the stage shows `MiniplayerActiveNotice` with
+  Bring them back. Touch only devices never see any miniplayer button (`canUseMiniplayer()`).
+- **Where it floats:** `media/miniplayer-window.ts` opens an always-on-top window. Chrome and
+  Edge use Document Picture-in-Picture, the desktop app opens a child window named
+  `MINIPLAYER_WINDOW_NAME` that its main process allows with `alwaysOnTop`, and other browsers
+  fall back to `InPageMiniplayer`, a panel dragged by its header. The app's style sheets are
+  copied into the window, its `dark` class follows the color scheme, and `MiniplayerHost`
+  renders the panel into it with `Teleport`, so the same live streams play without
+  reconnecting. Tooltips measure the window they are in.
+- **Layout:** `miniplayer-store.ts` keeps the shares as rows. New shares stack one above the
+  other. Every tile is one absolutely placed layer sized by its row and column, so a layout
+  change only moves boxes, which glide with a bouncy CSS transition and never remount videos.
+- **Fitting the window:** `media/miniplayer-layout.ts` measures the content size that shows
+  every row without empty space, from each share's real video shape. The floating window opens
+  at that size and refits after every rearrangement and whenever a video's size changes. It
+  keeps the width the user chose and only changes the height, shrinking both sides when the
+  result would be taller than 90% of the screen. The in-page panel uses the same measure.
+- **Rearranging:** with two or more shares a grip shows on hover and the cursor turns into a
+  hand. `useMiniplayerTileDragging` lifts the grabbed tile under the pointer and finds the
+  nearest other tile and its closest edge, shown by `MiniplayerDropIndicator`. Dropping on the
+  left or right puts the share beside that one, and on the top or bottom puts it above or below.
+  Each tile only has the share's volume control (`ShareVolumeControl`, shared with the stage)
+  and the button that puts it back in the room, which also returns you to the room page.
+- **No Vue transitions inside the window:** a backgrounded tab pauses the animation frames Vue
+  transitions wait for, so the miniplayer animates with CSS transitions, `starting:` styles and
+  keyframes only.
 
 ## Windows desktop app
 
