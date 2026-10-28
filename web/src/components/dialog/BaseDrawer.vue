@@ -47,6 +47,8 @@ const { dialogElement, closeDialog, handleNativeCancel, handleBackdropClick } = 
               <BaseIconButton
                 :icon="CloseIcon"
                 accessible-label="Close"
+                tooltip-placement="bottom"
+                tooltip-alignment="end"
                 variant="neutral"
                 appearance="ghost"
                 size="sm"

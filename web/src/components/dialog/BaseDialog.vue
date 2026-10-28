@@ -31,6 +31,8 @@ const isOpen = defineModel<boolean>('open', { default: false })
         <BaseIconButton
           :icon="CloseIcon"
           accessible-label="Close"
+          tooltip-placement="bottom"
+          tooltip-alignment="end"
           variant="neutral"
           appearance="ghost"
           size="sm"

@@ -50,6 +50,7 @@ function handleDismissButtonClick() {
     <BaseIconButton
       :icon="CloseIcon"
       accessible-label="Dismiss"
+      tooltip-placement="bottom"
       variant="neutral"
       appearance="ghost"
       size="sm"
