@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import DiscordSignInButton from '@/components/authentication/DiscordSignInButton.vue'
 import LoadErrorRetry from '@/components/feedback/LoadErrorRetry.vue'
@@ -12,11 +12,10 @@ import RoomSidebar from '@/components/rooms/RoomSidebar.vue'
 import RoomUnavailableNotice from '@/components/rooms/RoomUnavailableNotice.vue'
 import RoomScreenShareArea from '@/components/screen-share/RoomScreenShareArea.vue'
 import { useRequestedRoomPresence } from '@/composables/use-requested-room-presence'
-import { useRoomArrivalNotifications } from '@/composables/use-room-arrival-notifications'
-import { useRoomKickRedirect } from '@/composables/use-room-kick-redirect'
-import { useRoomScreenSharing } from '@/composables/use-room-screen-sharing'
+import { useActiveRoomStore } from '@/stores/active-room-store'
 import { useAuthenticationStore } from '@/stores/authentication-store'
 import { useCurrentUserStore } from '@/stores/current-user-store'
+import { useMiniplayerStore } from '@/stores/miniplayer-store'
 import { useRoomStore } from '@/stores/room-store'
 import { PendingIcon, RoomBlockedUserIcon, RoomIcon, SignInIcon } from '@/theme/app-icons'
 
@@ -34,19 +33,37 @@ const route = useRoute()
 const authenticationStore = useAuthenticationStore()
 const currentUserStore = useCurrentUserStore()
 const roomStore = useRoomStore()
+const activeRoomStore = useActiveRoomStore()
+const miniplayerStore = useMiniplayerStore()
 
 const requestedRoomId = computed(() => String(route.params.roomId))
-const { presentUsers, presentUserIds } = useRequestedRoomPresence(() => roomStore.isRoomMember)
-useRoomArrivalNotifications(
-  presentUsers,
-  () => roomStore.room?.id,
-  () => roomStore.room?.name,
+const { presentUsers, presentUserIds } = useRequestedRoomPresence()
+const screenShares = computed(() =>
+  activeRoomStore.isActiveRoom(roomStore.room?.id) ? activeRoomStore.screenShares : [],
 )
-const { screenShares } = useRoomScreenSharing(presentUsers, () => roomStore.isRoomMember)
-useRoomKickRedirect(
-  () => roomStore.room?.id,
-  () => roomStore.room?.name,
+
+watch(
+  () =>
+    roomStore.isRoomMember && roomStore.room
+      ? { id: roomStore.room.id, name: roomStore.room.name }
+      : undefined,
+  (memberRoom, previousMemberRoom) => {
+    if (memberRoom) {
+      activeRoomStore.enterRoom(memberRoom)
+      return
+    }
+    if (previousMemberRoom && activeRoomStore.isActiveRoom(previousMemberRoom.id)) {
+      activeRoomStore.leaveRoom()
+    }
+  },
+  { immediate: true },
 )
+
+onBeforeUnmount(() => {
+  if (!miniplayerStore.isOpen) {
+    activeRoomStore.leaveRoom()
+  }
+})
 
 const visibleRoomPageScreen = computed<RoomPageScreen>(() => {
   if (authenticationStore.isRestoringSession) {

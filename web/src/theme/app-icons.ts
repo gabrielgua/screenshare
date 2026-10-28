@@ -78,6 +78,9 @@ export {
   Download01Icon as DownloadIcon,
   ArrowDown01Icon as OpenMenuIcon,
   Calendar03Icon as MemberSinceIcon,
+  PictureInPictureOnIcon as OpenMiniplayerIcon,
+  PictureInPictureExitIcon as ReturnFromMiniplayerIcon,
+  GripVerticalIcon as DragHandleIcon,
 } from '@hugeicons/core-free-icons'
 
 export type AppIcon = typeof import('@hugeicons/core-free-icons').HelpCircleIcon

@@ -1,0 +1,1 @@
+export const FALLBACK_SHARE_ASPECT_RATIO = 16 / 9

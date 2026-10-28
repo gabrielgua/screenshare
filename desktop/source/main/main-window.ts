@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { BrowserWindow, shell, type Session } from 'electron'
 import { APP_ADDRESS, canOpenInBrowser, canOpenInsideApp, isAppAddress } from './app-address'
 import { stopApplicationAudio } from './application-audio-sharing'
+import { describeMiniplayerWindow, isMiniplayerWindowRequest } from './miniplayer-window'
 import { describeWindowControls, readInitialColorScheme } from './window-controls'
 
 const ALLOWED_APP_PERMISSIONS = new Set([
@@ -60,9 +61,12 @@ export function grantAppPermissions(session: Session) {
 }
 
 function keepNavigationInsideTrustedPages(mainWindow: BrowserWindow) {
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (canOpenInBrowser(url)) {
-      void shell.openExternal(url)
+  mainWindow.webContents.setWindowOpenHandler((openDetails) => {
+    if (isMiniplayerWindowRequest(openDetails)) {
+      return { action: 'allow', overrideBrowserWindowOptions: describeMiniplayerWindow() }
+    }
+    if (canOpenInBrowser(openDetails.url)) {
+      void shell.openExternal(openDetails.url)
     }
     return { action: 'deny' }
   })

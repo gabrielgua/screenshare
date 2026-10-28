@@ -1,6 +1,8 @@
 import { toValue, watch, type MaybeRefOrGetter } from 'vue'
 import { useRouter } from 'vue-router'
 import { useActionFeedbackStore } from '@/stores/action-feedback-store'
+import { useActiveRoomStore } from '@/stores/active-room-store'
+import { useMiniplayerStore } from '@/stores/miniplayer-store'
 import { useRoomPresenceStore, type RoomKickReason } from '@/stores/room-presence-store'
 
 interface RoomKickMessage {
@@ -26,6 +28,8 @@ export function useRoomKickRedirect(
   const router = useRouter()
   const roomPresenceStore = useRoomPresenceStore()
   const actionFeedbackStore = useActionFeedbackStore()
+  const activeRoomStore = useActiveRoomStore()
+  const miniplayerStore = useMiniplayerStore()
 
   watch(
     () => roomPresenceStore.latestKickNotice,
@@ -34,9 +38,12 @@ export function useRoomKickRedirect(
         return
       }
       const kickMessage = kickMessageByReason[kickNotice.reason]
+      const kickedRoomName = toValue(roomName) ?? 'the room'
+      miniplayerStore.close()
+      activeRoomStore.leaveRoom()
       router.push({ name: 'home' })
       actionFeedbackStore.showErrorFeedback(
-        kickMessage.title(toValue(roomName) ?? 'the room'),
+        kickMessage.title(kickedRoomName),
         kickMessage.message,
         { shouldAutoClose: false },
       )
