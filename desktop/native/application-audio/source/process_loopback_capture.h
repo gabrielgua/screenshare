@@ -7,8 +7,6 @@
 #include <thread>
 #include <vector>
 
-enum class LoopbackScope { IncludeProcessTree, ExcludeProcessTree };
-
 constexpr DWORD CAPTURED_SAMPLE_RATE = 48000;
 constexpr WORD CAPTURED_CHANNEL_COUNT = 2;
 
@@ -19,8 +17,7 @@ struct LoopbackCaptureListeners {
 
 class ProcessLoopbackCapture {
  public:
-  ProcessLoopbackCapture(DWORD targetProcessId, LoopbackScope scope,
-                         LoopbackCaptureListeners listeners);
+  ProcessLoopbackCapture(DWORD targetProcessId, LoopbackCaptureListeners listeners);
   ~ProcessLoopbackCapture();
 
   ProcessLoopbackCapture(const ProcessLoopbackCapture&) = delete;
@@ -34,7 +31,6 @@ class ProcessLoopbackCapture {
   std::string CaptureUntilStopped();
 
   DWORD targetProcessId;
-  LoopbackScope scope;
   LoopbackCaptureListeners listeners;
   HANDLE stopRequestedEvent;
   std::thread captureThread;

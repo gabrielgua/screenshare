@@ -4,7 +4,7 @@ import { APPLICATION_AUDIO_PORT_CHANNEL } from '../shared/desktop-ipc-channels'
 import {
   loadApplicationAudioAddon,
   type ApplicationAudioCapture,
-  type ApplicationAudioScope,
+  type ApplicationAudioFilter,
 } from './application-audio-addon'
 import { readCaptureSourceKind, readWindowHandle } from './screen-capture-sources'
 
@@ -14,10 +14,12 @@ interface ActiveApplicationAudio {
   samplesPort: MessagePortMain
 }
 
-interface ApplicationAudioTarget {
-  processId: number
-  scope: ApplicationAudioScope
-}
+const NEVER_SHARED_EXECUTABLE_NAMES = [
+  'Discord.exe',
+  'DiscordPTB.exe',
+  'DiscordCanary.exe',
+  'DiscordDevelopment.exe',
+]
 
 let activeApplicationAudio: ActiveApplicationAudio | undefined
 let latestCaptureId = 0
@@ -28,13 +30,12 @@ export function startApplicationAudio(
 ): StartedApplicationAudio {
   stopApplicationAudio()
   const addon = loadApplicationAudioAddon()
-  const audioTarget = findApplicationAudioTarget(sourceId)
+  const audioFilter = describeApplicationAudioFilter(sourceId)
   latestCaptureId += 1
   const captureId = latestCaptureId
   const { port1: samplesPort, port2: receivingPort } = new MessageChannelMain()
   const capture = new addon.ApplicationAudioCapture({
-    processId: audioTarget.processId,
-    scope: audioTarget.scope,
+    ...audioFilter,
     onSamplesCaptured: (samples) => samplesPort.postMessage(samples),
     onCaptureFailed: (failureDescription) => {
       console.error(`Application audio capture failed: ${failureDescription}`)
@@ -64,9 +65,9 @@ export function stopApplicationAudio(captureId?: number) {
   samplesPort.close()
 }
 
-function findApplicationAudioTarget(sourceId: string): ApplicationAudioTarget {
+function readSharedProcessId(sourceId: string): number {
   if (readCaptureSourceKind(sourceId) === 'screen') {
-    return { processId: process.pid, scope: 'exclude-process-tree' }
+    return 0
   }
   const windowHandle = readWindowHandle(sourceId)
   const processId =
@@ -74,5 +75,13 @@ function findApplicationAudioTarget(sourceId: string): ApplicationAudioTarget {
   if (processId === 0) {
     throw new Error('That window was closed')
   }
-  return { processId, scope: 'include-process-tree' }
+  return processId
+}
+
+function describeApplicationAudioFilter(sourceId: string): ApplicationAudioFilter {
+  return {
+    scopeProcessId: readSharedProcessId(sourceId),
+    excludedProcessId: process.pid,
+    excludedExecutableNames: NEVER_SHARED_EXECUTABLE_NAMES,
+  }
 }

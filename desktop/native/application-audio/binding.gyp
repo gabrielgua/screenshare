@@ -4,6 +4,8 @@
       "target_name": "application_audio",
       "sources": [
         "source/application_audio_addon.cpp",
+        "source/audio_process_filter.cpp",
+        "source/filtered_audio_capture.cpp",
         "source/process_loopback_capture.cpp"
       ],
       "include_dirs": ["<!(node -p \"require('node-addon-api').include_dir\")"],

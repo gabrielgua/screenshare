@@ -535,11 +535,22 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   it without the browser picker.
 - **Audio:** the native addon activates `VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK` with
   `ActivateAudioInterfaceAsync`, the same Windows API Discord's voice engine uses. A window
-  captures its process tree only. A screen captures every app except Screenshare's own process
-  tree, so viewers never hear their own sound back. Samples are 48 kHz stereo floats. They travel
-  from the main process through a `MessagePort` straight into an AudioWorklet, which plays them
-  into a `MediaStreamTrack` that WebRTC sends like any other track. The worklet keeps 40 to
-  200ms of audio buffered.
+  shares the apps in its process tree and a screen shares every app, but neither ever shares
+  Discord (`NEVER_SHARED_EXECUTABLE_NAMES` in `application-audio-sharing.ts`: Discord, PTB,
+  Canary and Development) or Screenshare's own process tree, so viewers never hear Discord or
+  their own sound back. Windows can exclude only one process tree per capture, so
+  `FilteredAudioCapture` lists the processes with audio sessions on every output device every
+  second, skips excluded processes, their descendants and any process whose tree contains one
+  (an include capture takes the whole tree), captures each remaining app with its own include
+  capture and mixes them on a steady 48 kHz clock. A new app is heard within a second.
+  Discord in a browser tab plays through the browser's process, so it is only kept out when
+  the browser is not part of the share. Samples are 48 kHz stereo floats. They travel from the
+  main process through a `MessagePort` straight into an AudioWorklet, which plays them into a
+  `MediaStreamTrack` that WebRTC sends like any other track. The worklet keeps 40 to 200ms of
+  audio buffered.
+- **Browser audio:** the web version cannot filter apps out of the mixed system audio a browser
+  gives for an entire screen, so Discord can still be heard there. Only the desktop app keeps it
+  out.
 - **Title bar:** the window hides the Windows title bar (`titleBarStyle: 'hidden'`) and keeps only
   the native minimize, maximize and close buttons, drawn over the page at the header's 64px
   height. `AppHeader` is the top bar: `window-drag-region` lets you drag the window by it while
