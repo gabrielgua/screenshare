@@ -16,6 +16,7 @@ import { useScreenShareStore } from '@/stores/screen-share-store'
 import { canInstallDesktopApp, isRunningInDesktopApp } from '@/media/desktop-bridge'
 import { ShareScreenIcon, SoundOnIcon } from '@/theme/app-icons'
 import DesktopAppDownloadButton from '@/components/desktop-app/DesktopAppDownloadButton.vue'
+import type { DesktopCaptureSource } from '@/media/desktop-bridge-contract'
 import DesktopSourcePicker from './DesktopSourcePicker.vue'
 
 export type ShareScreenDialogPurpose = 'start' | 'change'
@@ -29,7 +30,10 @@ withDefaults(defineProps<ShareScreenDialogProps>(), {
 })
 
 const emit = defineEmits<{
-  settingsConfirmed: [settings: ScreenShareSettings, desktopSourceId: string | undefined]
+  settingsConfirmed: [
+    settings: ScreenShareSettings,
+    desktopSource: DesktopCaptureSource | undefined,
+  ]
 }>()
 
 const isOpen = defineModel<boolean>('open', { default: false })
@@ -53,9 +57,9 @@ const shouldOfferDesktopApp = canInstallDesktopApp()
 const selectedResolution = ref<ScreenShareResolution>('1080p')
 const selectedFrameRate = ref<ScreenShareFrameRate>(30)
 const shouldShareAudio = ref(true)
-const selectedDesktopSourceId = ref<string>()
+const selectedDesktopSource = ref<DesktopCaptureSource>()
 
-const isConfirmBlocked = computed(() => isDesktopApp && !selectedDesktopSourceId.value)
+const isConfirmBlocked = computed(() => isDesktopApp && !selectedDesktopSource.value)
 
 watch(isOpen, (isNowOpen) => {
   if (!isNowOpen) {
@@ -65,7 +69,7 @@ watch(isOpen, (isNowOpen) => {
   selectedResolution.value = rememberedSettings.resolution
   selectedFrameRate.value = rememberedSettings.frameRate
   shouldShareAudio.value = rememberedSettings.shouldShareAudio
-  selectedDesktopSourceId.value = undefined
+  selectedDesktopSource.value = undefined
 })
 
 function handleCancelButtonClick() {
@@ -80,7 +84,7 @@ function handleConfirmButtonClick() {
       frameRate: selectedFrameRate.value,
       shouldShareAudio: shouldShareAudio.value,
     },
-    selectedDesktopSourceId.value,
+    selectedDesktopSource.value,
   )
 }
 </script>
@@ -95,7 +99,7 @@ function handleConfirmButtonClick() {
     <div class="flex flex-col gap-5">
       <DesktopSourcePicker
         v-if="isDesktopApp && isOpen"
-        v-model:selected-source-id="selectedDesktopSourceId"
+        v-model:selected-source="selectedDesktopSource"
       />
       <div class="flex flex-col gap-2">
         <BaseText as="span" size="sm" weight="semibold">Quality</BaseText>

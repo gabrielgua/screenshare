@@ -1,10 +1,17 @@
 import { join } from 'node:path'
 
-export type ApplicationAudioScope = 'include-process-tree' | 'exclude-process-tree'
+export interface ApplicationAudioFilter {
+  scopeProcessId: number
+  excludedProcessId: number
+  excludedExecutableNames: string[]
+}
 
-export interface ApplicationAudioCaptureOptions {
+export interface CapturedApplication {
   processId: number
-  scope: ApplicationAudioScope
+  executableName: string
+}
+
+export interface ApplicationAudioCaptureOptions extends ApplicationAudioFilter {
   onSamplesCaptured: (samples: Float32Array) => void
   onCaptureFailed: (failureDescription: string) => void
 }
@@ -17,6 +24,7 @@ export interface ApplicationAudioCapture {
 interface ApplicationAudioAddon {
   ApplicationAudioCapture: new (options: ApplicationAudioCaptureOptions) => ApplicationAudioCapture
   findWindowProcessId(windowHandle: number): number
+  listCapturedApplications(filter: ApplicationAudioFilter): CapturedApplication[]
   capturedSampleRate: number
   capturedChannelCount: number
 }

@@ -1,155 +1,221 @@
-import { ref, type Ref } from 'vue'
-import type { MiniplayerDropEdge } from '@/stores/miniplayer-store'
-
-export interface MiniplayerDropTarget {
-  userId: string
-  edge: MiniplayerDropEdge
-}
+import type { Ref } from 'vue'
+import {
+  containsPoint,
+  expandBox,
+  findClosestEdge,
+  findNearestTile,
+  measureDistanceToBox,
+  moveBox,
+  readContentScreenBox,
+  readTileBoxes,
+  type ScreenBox,
+  type ScreenPoint,
+} from '@/media/miniplayer-geometry'
+import { MINIPLAYER_HEADER_HEIGHT_PIXELS } from '@/media/miniplayer-layout'
+import { canSeparateMiniplayers, moveFloatingWindowBy } from '@/media/miniplayer-window'
+import {
+  findTargetForWindowBox,
+  PIN_DISTANCE_PIXELS,
+  readOtherWindowTiles,
+} from '@/media/miniplayer-drop-targets'
+import { useMiniplayerStore, type MiniplayerDropTarget } from '@/stores/miniplayer-store'
 
 interface PendingTileDrag {
   userId: string
   element: HTMLElement
-  startX: number
-  startY: number
-}
-
-interface TileBox {
-  userId: string
-  box: DOMRect
+  view: Window
+  startPointer: ScreenPoint
+  sentWindowOffset: ScreenPoint
+  startContentBox: ScreenBox
+  pointerOffsetFromTileCenter: ScreenPoint
+  isMovingWindow: boolean
+  hasStarted: boolean
 }
 
 const DRAG_START_DISTANCE_PIXELS = 5
-const DRAGGED_TILE_SCALE = 1.04
-const TILE_SELECTOR = '[data-miniplayer-user-id]'
+const DETACH_DISTANCE_PIXELS = 48
 const NON_DRAGGING_TARGET_SELECTOR = 'button, input'
-
-function measureDistanceToBox(pointerX: number, pointerY: number, box: DOMRect): number {
-  const horizontalDistance = Math.max(box.left - pointerX, 0, pointerX - box.right)
-  const verticalDistance = Math.max(box.top - pointerY, 0, pointerY - box.bottom)
-  return Math.hypot(horizontalDistance, verticalDistance)
-}
-
-function findClosestEdge(pointerX: number, pointerY: number, box: DOMRect): MiniplayerDropEdge {
-  const horizontalPosition = Math.min(Math.max((pointerX - box.left) / box.width, 0), 1)
-  const verticalPosition = Math.min(Math.max((pointerY - box.top) / box.height, 0), 1)
-  const distanceByEdge: Record<MiniplayerDropEdge, number> = {
-    left: horizontalPosition,
-    right: 1 - horizontalPosition,
-    top: verticalPosition,
-    bottom: 1 - verticalPosition,
-  }
-  const edges: MiniplayerDropEdge[] = ['left', 'right', 'top', 'bottom']
-  return edges.reduce((closestEdge, edge) =>
-    distanceByEdge[edge] < distanceByEdge[closestEdge] ? edge : closestEdge,
-  )
-}
 
 export function useMiniplayerTileDragging(
   panelElement: Ref<HTMLElement | undefined>,
-  onTileDropped: (userId: string, dropTarget: MiniplayerDropTarget) => void,
+  readGroupId: () => string,
+  isAloneInWindow: () => boolean,
 ) {
-  const draggedUserId = ref<string>()
-  const dropTarget = ref<MiniplayerDropTarget>()
+  const miniplayerStore = useMiniplayerStore()
+  let isDetaching = false
   let pendingTileDrag: PendingTileDrag | undefined
 
-  function readOtherTileBoxes(userId: string): TileBox[] {
-    const tileElements = panelElement.value?.querySelectorAll<HTMLElement>(TILE_SELECTOR) ?? []
-    return [...tileElements]
-      .filter((tileElement) => tileElement.dataset.miniplayerUserId !== userId)
-      .map((tileElement) => ({
-        userId: tileElement.dataset.miniplayerUserId ?? '',
-        box: tileElement.getBoundingClientRect(),
-      }))
-  }
-
-  function findDropTarget(
+  function findTargetInsideWindow(
     userId: string,
-    pointerX: number,
-    pointerY: number,
+    pointerEvent: PointerEvent,
   ): MiniplayerDropTarget | undefined {
-    const closestTile = readOtherTileBoxes(userId).reduce<TileBox | undefined>(
-      (closestSoFar, tileBox) =>
-        !closestSoFar ||
-        measureDistanceToBox(pointerX, pointerY, tileBox.box) <
-          measureDistanceToBox(pointerX, pointerY, closestSoFar.box)
-          ? tileBox
-          : closestSoFar,
-      undefined,
+    const clientPoint = { x: pointerEvent.clientX, y: pointerEvent.clientY }
+    const ownTiles = panelElement.value ? readTileBoxes(panelElement.value, userId) : []
+    const nearestTile = findNearestTile(ownTiles, (box) => measureDistanceToBox(clientPoint, box))
+    return (
+      nearestTile && {
+        userId: nearestTile.userId,
+        edge: findClosestEdge(clientPoint, nearestTile.box),
+      }
     )
-    if (!closestTile) {
-      return undefined
-    }
-    return {
-      userId: closestTile.userId,
-      edge: findClosestEdge(pointerX, pointerY, closestTile.box),
-    }
   }
 
-  function finishDragging(shouldDrop: boolean) {
-    if (!pendingTileDrag) {
+  function findTargetInOtherWindows(
+    userId: string,
+    pointer: ScreenPoint,
+  ): MiniplayerDropTarget | undefined {
+    const nearestTile = findNearestTile(
+      readOtherWindowTiles(readGroupId(), userId),
+      (box) => measureDistanceToBox(pointer, box),
+      PIN_DISTANCE_PIXELS,
+    )
+    return (
+      nearestTile && { userId: nearestTile.userId, edge: findClosestEdge(pointer, nearestTile.box) }
+    )
+  }
+
+  function dragTileInsideWindow(drag: PendingTileDrag, pointerEvent: PointerEvent) {
+    const pointer = { x: pointerEvent.screenX, y: pointerEvent.screenY }
+    followPointer(drag, pointer)
+    const windowArea = {
+      left: 0,
+      top: 0,
+      right: drag.view.innerWidth,
+      bottom: drag.view.innerHeight,
+    }
+    const clientPoint = { x: pointerEvent.clientX, y: pointerEvent.clientY }
+    if (containsPoint(expandBox(windowArea, DETACH_DISTANCE_PIXELS), clientPoint)) {
+      isDetaching = false
+      miniplayerStore.showDropTarget(findTargetInsideWindow(drag.userId, pointerEvent))
       return
     }
-    const { userId, element } = pendingTileDrag
-    const finalDropTarget = draggedUserId.value ? dropTarget.value : undefined
+    const targetInOtherWindow = findTargetInOtherWindows(drag.userId, pointer)
+    isDetaching = !targetInOtherWindow && canSeparateMiniplayers()
+    miniplayerStore.showDropTarget(targetInOtherWindow)
+  }
+
+  function followPointer(drag: PendingTileDrag, pointer: ScreenPoint) {
+    if (canSeparateMiniplayers()) {
+      miniplayerStore.showDragGhost({
+        userId: drag.userId,
+        left: pointer.x - drag.element.offsetWidth / 2,
+        top: pointer.y - drag.element.offsetHeight / 2,
+        width: drag.element.offsetWidth,
+        height: drag.element.offsetHeight,
+      })
+      return
+    }
+    const horizontalOffset = pointer.x - drag.startPointer.x + drag.pointerOffsetFromTileCenter.x
+    const verticalOffset = pointer.y - drag.startPointer.y + drag.pointerOffsetFromTileCenter.y
+    drag.element.style.transform = `translate(${horizontalOffset}px, ${verticalOffset}px)`
+  }
+
+  function moveWholeWindow(drag: PendingTileDrag, pointerEvent: PointerEvent) {
+    const horizontalOffset = pointerEvent.screenX - drag.startPointer.x
+    const verticalOffset = pointerEvent.screenY - drag.startPointer.y
+    const windowOffset = { x: Math.round(horizontalOffset), y: Math.round(verticalOffset) }
+    const unsentOffset = {
+      x: windowOffset.x - drag.sentWindowOffset.x,
+      y: windowOffset.y - drag.sentWindowOffset.y,
+    }
+    if (unsentOffset.x !== 0 || unsentOffset.y !== 0) {
+      drag.sentWindowOffset = windowOffset
+      moveFloatingWindowBy(drag.view, readGroupId(), unsentOffset)
+    }
+    const movedContentBox = moveBox(drag.startContentBox, horizontalOffset, verticalOffset)
+    miniplayerStore.showDropTarget(
+      findTargetForWindowBox(readGroupId(), drag.userId, movedContentBox),
+    )
+  }
+
+  function finishDragging(shouldDrop: boolean, pointerEvent: PointerEvent) {
+    const drag = pendingTileDrag
+    if (!drag) {
+      return
+    }
+    const finalDropTarget = drag.hasStarted ? miniplayerStore.dropTarget : undefined
+    const shouldDetach = drag.hasStarted && isDetaching
     pendingTileDrag = undefined
-    draggedUserId.value = undefined
-    dropTarget.value = undefined
-    element.style.transform = ''
-    if (shouldDrop && finalDropTarget) {
-      onTileDropped(userId, finalDropTarget)
+    isDetaching = false
+    drag.element.style.transform = ''
+    miniplayerStore.stopDragging()
+    if (!shouldDrop) {
+      return
+    }
+    if (finalDropTarget) {
+      miniplayerStore.moveShare(drag.userId, finalDropTarget.userId, finalDropTarget.edge)
+      return
+    }
+    if (shouldDetach) {
+      miniplayerStore.unpinShare(drag.userId, {
+        left: pointerEvent.screenX - drag.element.offsetWidth / 2,
+        top: pointerEvent.screenY - drag.element.offsetHeight / 2 - MINIPLAYER_HEADER_HEIGHT_PIXELS,
+        tileWidth: drag.element.offsetWidth,
+      })
     }
   }
 
   function handleTilePointerDown(userId: string, pointerEvent: PointerEvent) {
     const pressedElement = pointerEvent.target
+    const view = panelElement.value?.ownerDocument.defaultView
     if (
+      !view ||
       pointerEvent.button !== 0 ||
       (pressedElement instanceof Element && pressedElement.closest(NON_DRAGGING_TARGET_SELECTOR))
     ) {
       return
     }
     const element = pointerEvent.currentTarget as HTMLElement
+    const tileBox = element.getBoundingClientRect()
     pendingTileDrag = {
       userId,
       element,
-      startX: pointerEvent.clientX,
-      startY: pointerEvent.clientY,
+      view,
+      startPointer: { x: pointerEvent.screenX, y: pointerEvent.screenY },
+      sentWindowOffset: { x: 0, y: 0 },
+      startContentBox: readContentScreenBox(view),
+      pointerOffsetFromTileCenter: {
+        x: pointerEvent.clientX - (tileBox.left + tileBox.width / 2),
+        y: pointerEvent.clientY - (tileBox.top + tileBox.height / 2),
+      },
+      isMovingWindow: isAloneInWindow(),
+      hasStarted: false,
     }
     element.setPointerCapture(pointerEvent.pointerId)
   }
 
   function handleTilePointerMove(pointerEvent: PointerEvent) {
-    if (!pendingTileDrag) {
+    const drag = pendingTileDrag
+    if (!drag) {
       return
     }
-    const horizontalOffset = pointerEvent.clientX - pendingTileDrag.startX
-    const verticalOffset = pointerEvent.clientY - pendingTileDrag.startY
-    if (
-      !draggedUserId.value &&
-      Math.hypot(horizontalOffset, verticalOffset) < DRAG_START_DISTANCE_PIXELS
-    ) {
-      return
-    }
-    draggedUserId.value = pendingTileDrag.userId
-    pendingTileDrag.element.style.transform = `translate(${horizontalOffset}px, ${verticalOffset}px) scale(${DRAGGED_TILE_SCALE})`
-    dropTarget.value = findDropTarget(
-      pendingTileDrag.userId,
-      pointerEvent.clientX,
-      pointerEvent.clientY,
+    const travelledDistance = Math.hypot(
+      pointerEvent.screenX - drag.startPointer.x,
+      pointerEvent.screenY - drag.startPointer.y,
     )
+    if (!drag.hasStarted && travelledDistance < DRAG_START_DISTANCE_PIXELS) {
+      return
+    }
+    if (!drag.hasStarted) {
+      drag.hasStarted = true
+      miniplayerStore.startDragging(drag.userId)
+    }
+    if (drag.isMovingWindow) {
+      moveWholeWindow(drag, pointerEvent)
+      return
+    }
+    dragTileInsideWindow(drag, pointerEvent)
   }
 
-  function handleTilePointerUp() {
-    finishDragging(true)
+  function handleTilePointerUp(pointerEvent: PointerEvent) {
+    finishDragging(true, pointerEvent)
   }
 
-  function handleTilePointerCancel() {
-    finishDragging(false)
+  function handleTilePointerCancel(pointerEvent: PointerEvent) {
+    finishDragging(false, pointerEvent)
   }
 
   return {
-    draggedUserId,
-    dropTarget,
     handleTilePointerDown,
     handleTilePointerMove,
     handleTilePointerUp,

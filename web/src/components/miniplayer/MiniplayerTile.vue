@@ -12,23 +12,30 @@ import BaseText from '@/components/typography/BaseText.vue'
 import type { RoomScreenShare } from '@/composables/use-room-screen-sharing'
 import { FALLBACK_SHARE_ASPECT_RATIO } from '@/media/video-shape'
 import { useActiveRoomStore } from '@/stores/active-room-store'
-import { useMiniplayerStore, type MiniplayerDropEdge } from '@/stores/miniplayer-store'
+import { useMiniplayerStore } from '@/stores/miniplayer-store'
 import { useScreenShareStore } from '@/stores/screen-share-store'
-import { DragHandleIcon, ReturnFromMiniplayerIcon } from '@/theme/app-icons'
-import MiniplayerDropIndicator from './MiniplayerDropIndicator.vue'
+import {
+  DragHandleIcon,
+  ReturnFromMiniplayerIcon,
+  UnpinFromMiniplayerIcon,
+} from '@/theme/app-icons'
 
 interface MiniplayerTileProps {
   screenShare: RoomScreenShare
   canBeDragged?: boolean
+  canBeUnpinned?: boolean
   isDragged?: boolean
-  dropEdge?: MiniplayerDropEdge
 }
 
 const props = withDefaults(defineProps<MiniplayerTileProps>(), {
   canBeDragged: false,
+  canBeUnpinned: false,
   isDragged: false,
-  dropEdge: undefined,
 })
+
+const emit = defineEmits<{
+  unpinRequested: []
+}>()
 
 const route = useRoute()
 const router = useRouter()
@@ -48,6 +55,10 @@ const cursorClasses = computed(() => {
   return props.canBeDragged ? 'cursor-grab' : 'cursor-default'
 })
 
+function handleUnpinButtonClick() {
+  emit('unpinRequested')
+}
+
 function handleVideoAspectRatioChanged(aspectRatio: number) {
   videoAspectRatio.value = aspectRatio
 }
@@ -64,8 +75,8 @@ async function handleReturnButtonClick() {
 
 <template>
   <article
-    class="group/miniplayer-tile relative size-full overflow-hidden rounded-card bg-neutral-950 ring-2 transition-shadow duration-200"
-    :class="[cursorClasses, isDragged ? 'shadow-card ring-brand-500' : 'ring-transparent']"
+    class="group/miniplayer-tile relative size-full overflow-hidden bg-neutral-950"
+    :class="cursorClasses"
     :aria-label="`${shareLabel} screen`"
   >
     <FittedVideoFrame :aspect-ratio="videoAspectRatio">
@@ -87,6 +98,24 @@ async function handleReturnButtonClick() {
       >
         <BaseIcon :icon="DragHandleIcon" size="sm" />
       </span>
+      <div
+        v-if="canBeUnpinned"
+        class="dark absolute top-1.5 right-1.5 rounded-control bg-neutral-950/70 opacity-0 transition-opacity duration-200 group-hover/miniplayer-tile:opacity-100 focus-within:opacity-100 motion-reduce:transition-none"
+      >
+        <BaseIconButton
+          :icon="UnpinFromMiniplayerIcon"
+          :accessible-label="
+            screenShare.isOwnShare
+              ? 'Unpin your screen into its own window'
+              : `Unpin ${screenShare.displayName}'s screen into its own window`
+          "
+          tooltip-placement="left"
+          variant="neutral"
+          appearance="ghost"
+          size="sm"
+          @click="handleUnpinButtonClick"
+        />
+      </div>
       <div
         class="dark pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-linear-to-t from-neutral-950/80 to-transparent p-1.5 pt-8 opacity-0 transition-opacity duration-200 group-hover/miniplayer-tile:opacity-100 motion-reduce:transition-none"
       >
@@ -125,6 +154,5 @@ async function handleReturnButtonClick() {
         </div>
       </div>
     </FittedVideoFrame>
-    <MiniplayerDropIndicator v-if="dropEdge" :key="dropEdge" :edge="dropEdge" />
   </article>
 </template>

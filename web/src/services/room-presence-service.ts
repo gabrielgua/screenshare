@@ -1,4 +1,5 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { readSharedSurface, type SharedSurface } from '@/media/shared-surface'
 import { supabaseClient } from '@/services/supabase-client'
 
 export interface PresentRoomUser {
@@ -7,6 +8,7 @@ export interface PresentRoomUser {
   avatarUrl?: string
   arrivedAt: string
   isSharingScreen?: boolean
+  sharedSurface?: SharedSurface
 }
 
 function buildRoomPresenceTopic(roomId: string): string {
@@ -34,12 +36,13 @@ export function readPresentRoomUsers(channel: RealtimeChannel): PresentRoomUser[
     .filter((presentRoomUser): presentRoomUser is NonNullable<typeof presentRoomUser> =>
       Boolean(presentRoomUser?.userId),
     )
-    .map(({ userId, displayName, avatarUrl, arrivedAt, isSharingScreen }) => ({
+    .map(({ userId, displayName, avatarUrl, arrivedAt, isSharingScreen, sharedSurface }) => ({
       userId,
       displayName,
       avatarUrl,
       arrivedAt,
       isSharingScreen: isSharingScreen === true,
+      sharedSurface: isSharingScreen === true ? readSharedSurface(sharedSurface) : undefined,
     }))
     .sort((firstUser, secondUser) => firstUser.arrivedAt.localeCompare(secondUser.arrivedAt))
 }

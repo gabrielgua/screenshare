@@ -9,6 +9,8 @@
 #include <cstdio>
 #include <utility>
 
+#include "com_apartment.h"
+
 using Microsoft::WRL::ComPtr;
 
 namespace {
@@ -56,17 +58,6 @@ class ActivationCompletionHandler
   ComPtr<IAudioClient> audioClient;
 };
 
-class ComApartment {
- public:
-  ComApartment() { initializationResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED); }
-  ~ComApartment() {
-    if (SUCCEEDED(initializationResult)) {
-      CoUninitialize();
-    }
-  }
-  HRESULT initializationResult;
-};
-
 class ScopedEvent {
  public:
   ScopedEvent() : handle(CreateEventW(nullptr, FALSE, FALSE, nullptr)) {}
@@ -91,10 +82,9 @@ WAVEFORMATEX DescribeCapturedFormat() {
 
 }
 
-ProcessLoopbackCapture::ProcessLoopbackCapture(DWORD targetProcessId, LoopbackScope scope,
+ProcessLoopbackCapture::ProcessLoopbackCapture(DWORD targetProcessId,
                                                LoopbackCaptureListeners listeners)
     : targetProcessId(targetProcessId),
-      scope(scope),
       listeners(std::move(listeners)),
       stopRequestedEvent(CreateEventW(nullptr, TRUE, FALSE, nullptr)) {}
 
@@ -146,8 +136,7 @@ std::string ProcessLoopbackCapture::CaptureUntilStopped() {
   activationParameters.ActivationType = AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK;
   activationParameters.ProcessLoopbackParams.TargetProcessId = targetProcessId;
   activationParameters.ProcessLoopbackParams.ProcessLoopbackMode =
-      scope == LoopbackScope::IncludeProcessTree ? PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE
-                                                 : PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE;
+      PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE;
 
   PROPVARIANT activationVariant{};
   activationVariant.vt = VT_BLOB;

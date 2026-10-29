@@ -1,4 +1,5 @@
 import { computed, onScopeDispose, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
+import type { SharedSurface } from '@/media/shared-surface'
 import type { PresentRoomUser } from '@/services/room-presence-service'
 import { useCurrentUserStore } from '@/stores/current-user-store'
 import { useRoomPresenceStore } from '@/stores/room-presence-store'
@@ -10,6 +11,7 @@ export interface RoomScreenShare {
   avatarUrl?: string
   stream?: MediaStream
   isOwnShare: boolean
+  sharedSurface?: SharedSurface
 }
 
 export function useRoomScreenSharing(
@@ -45,11 +47,11 @@ export function useRoomScreenSharing(
   )
 
   watch(
-    () => screenShareStore.isSharingScreen,
-    (isSharingScreen) => {
+    () => [screenShareStore.isSharingScreen, screenShareStore.sharedSurface] as const,
+    ([isSharingScreen, sharedSurface]) => {
       const sharingRoomId = toValue(roomId)
       if (sharingRoomId) {
-        roomPresenceStore.updateOwnPresence(sharingRoomId, { isSharingScreen })
+        roomPresenceStore.updateOwnPresence(sharingRoomId, { isSharingScreen, sharedSurface })
       }
     },
   )
@@ -76,6 +78,7 @@ export function useRoomScreenSharing(
           avatarUrl: presentUser.avatarUrl,
           stream,
           isOwnShare,
+          sharedSurface: isOwnShare ? screenShareStore.sharedSurface : presentUser.sharedSurface,
         },
       ]
     })
