@@ -81,6 +81,7 @@ export {
   PictureInPictureOnIcon as OpenMiniplayerIcon,
   PictureInPictureExitIcon as ReturnFromMiniplayerIcon,
   GripVerticalIcon as DragHandleIcon,
+  Unlink02Icon as UnpinFromMiniplayerIcon,
 } from '@hugeicons/core-free-icons'
 
 export type AppIcon = typeof import('@hugeicons/core-free-icons').HelpCircleIcon

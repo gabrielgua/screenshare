@@ -1,9 +1,20 @@
 import { join } from 'node:path'
 import { BrowserWindow, shell, type Session } from 'electron'
+import { MINIPLAYER_WINDOW_MOVE_CHANNEL } from '../shared/desktop-ipc-channels'
 import { APP_ADDRESS, canOpenInBrowser, canOpenInsideApp, isAppAddress } from './app-address'
 import { stopApplicationAudio } from './application-audio-sharing'
-import { describeMiniplayerWindow, isMiniplayerWindowRequest } from './miniplayer-window'
-import { describeWindowControls, readInitialColorScheme } from './window-controls'
+import {
+  describeDragGhostWindow,
+  describeMiniplayerWindow,
+  isDragGhostWindowRequest,
+  isMiniplayerWindowRequest,
+  prepareChildWindow,
+} from './miniplayer-window'
+import {
+  describeWindowControls,
+  readCurrentColorScheme,
+  WINDOW_CONTROLS_HEIGHT_MATCHING_APP_HEADER,
+} from './window-controls'
 
 const ALLOWED_APP_PERMISSIONS = new Set([
   'media',
@@ -15,7 +26,10 @@ const ALLOWED_APP_PERMISSIONS = new Set([
 const WINDOW_ICON_PATH = join(__dirname, '..', 'assets', 'screenshare.ico')
 
 export function createMainWindow(): BrowserWindow {
-  const initialWindowControls = describeWindowControls(readInitialColorScheme())
+  const initialWindowControls = describeWindowControls(
+    readCurrentColorScheme(),
+    WINDOW_CONTROLS_HEIGHT_MATCHING_APP_HEADER,
+  )
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -62,6 +76,9 @@ export function grantAppPermissions(session: Session) {
 
 function keepNavigationInsideTrustedPages(mainWindow: BrowserWindow) {
   mainWindow.webContents.setWindowOpenHandler((openDetails) => {
+    if (isDragGhostWindowRequest(openDetails)) {
+      return { action: 'allow', overrideBrowserWindowOptions: describeDragGhostWindow() }
+    }
     if (isMiniplayerWindowRequest(openDetails)) {
       return { action: 'allow', overrideBrowserWindowOptions: describeMiniplayerWindow() }
     }
@@ -70,6 +87,13 @@ function keepNavigationInsideTrustedPages(mainWindow: BrowserWindow) {
     }
     return { action: 'deny' }
   })
+  mainWindow.webContents.on('did-create-window', (childWindow, creationDetails) =>
+    prepareChildWindow(childWindow, creationDetails.frameName, (windowMove) => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(MINIPLAYER_WINDOW_MOVE_CHANNEL, windowMove)
+      }
+    }),
+  )
   mainWindow.webContents.on('will-navigate', (navigationEvent) => {
     if (canOpenInsideApp(navigationEvent.url)) {
       return
