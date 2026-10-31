@@ -457,6 +457,14 @@ Approved, active users meet in rooms. A room is shared by sending its link, `/ro
   showing lives in `screen-share-store.ts`, so it survives the tile being rebuilt when the layout
   changes. Full screen on a tile makes the stage full screen in
   the focus layout, with the other shares as thumbnails that show on hover.
+- **Full screen on phones:** `useStageFullscreen` tries the real Fullscreen API first. iPhones
+  have none in any browser (Chrome on iOS is WebKit too), so there the stage fills the window
+  with `window-filling-stage`, and `window-filling-stage-rotated` turns a wide share 90 degrees
+  while the phone is held upright, because iOS cannot lock the orientation. The browser's own
+  bars can't be hidden there. `stage-fit-area` comes off the parent meanwhile, since its size
+  containment would trap a `fixed` child. Android locks the screen to landscape instead. On
+  touch only devices the room bar's full screen button does the same as the tile's, and tapping
+  the screen in full screen shows the controls and the other shares.
 - **Controls fit the picture:** each tile wraps its video and its name and controls in
   `FittedVideoFrame`, a box with the video's real shape (reported by `ScreenShareVideo`)
   contained and centered in the tile with the `shape-fit-frame` utility. The controls are never
