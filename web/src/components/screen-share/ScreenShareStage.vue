@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useFullscreen } from '@vueuse/core'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import type { RoomScreenShare } from '@/composables/use-room-screen-sharing'
+import { useStageFullscreen } from '@/composables/use-stage-fullscreen'
 import { useScreenShareStore } from '@/stores/screen-share-store'
 import ScreenShareEmptyState from './ScreenShareEmptyState.vue'
 import ScreenShareTile from './ScreenShareTile.vue'
@@ -13,12 +13,16 @@ interface ScreenShareStageProps {
 const props = defineProps<ScreenShareStageProps>()
 
 const screenShareStore = useScreenShareStore()
-const stageElement = ref<HTMLElement>()
 const {
+  stageElement,
+  focusedShareAspectRatio,
   isFullscreen: isStageFullscreen,
-  enter: enterStageFullscreen,
-  exit: exitStageFullscreen,
-} = useFullscreen(stageElement)
+  isFillingWindow,
+  isShareWiderThanTall,
+  enterFullscreen,
+  exitFullscreen,
+  toggleFullscreen,
+} = useStageFullscreen()
 
 const focusedScreenShare = computed(
   () =>
@@ -33,6 +37,19 @@ const isShowingFocusLayout = computed(
   () => isStageFullscreen.value || screenShareStore.layout === 'focus',
 )
 const isFillingStageArea = computed(() => props.screenShares.length > 1)
+const stageSizeClasses = computed(() => {
+  if (isFillingWindow.value) {
+    return isShareWiderThanTall.value ? 'window-filling-stage-rotated' : 'window-filling-stage'
+  }
+  return isFillingStageArea.value
+    ? 'relative size-full'
+    : 'video-fit-frame relative lg:aspect-auto lg:size-full'
+})
+const fullscreenThumbnailClasses = computed(() =>
+  screenShareStore.touchControlsUserId
+    ? 'opacity-100'
+    : 'pointer-events-none opacity-0 group-hover/stage:pointer-events-auto group-hover/stage:opacity-100',
+)
 const gridClasses = computed(() => {
   const shareCount = props.screenShares.length
   if (shareCount <= 1) {
@@ -51,7 +68,7 @@ watch(
   () => props.screenShares.length,
   (shareCount) => {
     if (shareCount === 0 && isStageFullscreen.value) {
-      void exitStageFullscreen()
+      void exitFullscreen()
     }
   },
 )
@@ -68,27 +85,31 @@ function handleFocusToggleRequested(userId: string) {
   screenShareStore.focusShare(userId)
 }
 
-async function handleFullscreenToggleRequested(userId: string) {
-  if (isStageFullscreen.value) {
-    await exitStageFullscreen()
-    return
-  }
-  screenShareStore.focusShare(userId)
-  await enterStageFullscreen()
+function handleFocusedVideoAspectRatioChanged(aspectRatio: number) {
+  focusedShareAspectRatio.value = aspectRatio
 }
+
+async function handleFullscreenToggleRequested(userId: string) {
+  if (!isStageFullscreen.value) {
+    screenShareStore.focusShare(userId)
+  }
+  await toggleFullscreen()
+}
+
+onBeforeUnmount(() => {
+  void exitFullscreen()
+})
 </script>
 
 <template>
   <div
-    class="stage-fit-area grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-1 place-items-center"
+    class="grid min-h-0 min-w-0 flex-1 grid-cols-1 grid-rows-1 place-items-center"
+    :class="{ 'stage-fit-area': !isFillingWindow }"
   >
     <div
       ref="stageElement"
-      class="group/stage relative"
-      :class="[
-        isFillingStageArea ? 'size-full' : 'video-fit-frame lg:aspect-auto lg:size-full',
-        { 'bg-neutral-950': isStageFullscreen },
-      ]"
+      class="group/stage"
+      :class="[stageSizeClasses, { 'bg-neutral-950': isStageFullscreen }]"
     >
       <ScreenShareEmptyState v-if="screenShares.length === 0" />
       <div
@@ -101,6 +122,7 @@ async function handleFullscreenToggleRequested(userId: string) {
             :screen-share="focusedScreenShare"
             is-focused
             :is-fullscreen="isStageFullscreen"
+            @video-aspect-ratio-changed="handleFocusedVideoAspectRatioChanged"
             @focus-toggle-requested="handleFocusToggleRequested(focusedScreenShare.userId)"
             @fullscreen-toggle-requested="
               handleFullscreenToggleRequested(focusedScreenShare.userId)
@@ -110,10 +132,12 @@ async function handleFullscreenToggleRequested(userId: string) {
         <ul
           v-if="otherScreenShares.length > 0"
           class="scrollbar-thin-on-hover flex h-20 shrink-0 gap-2 overflow-x-auto sm:h-28 short-landscape:h-16"
-          :class="{
-            'absolute inset-x-4 bottom-16 opacity-0 transition-opacity duration-200 group-hover/stage:opacity-100 motion-reduce:transition-none':
-              isStageFullscreen,
-          }"
+          :class="
+            isStageFullscreen && [
+              'absolute inset-x-4 bottom-16 transition-opacity duration-200 motion-reduce:transition-none',
+              fullscreenThumbnailClasses,
+            ]
+          "
           aria-label="Other shared screens"
         >
           <li

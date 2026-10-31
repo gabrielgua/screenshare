@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseIconButton from '@/components/button/BaseIconButton.vue'
 import { useAppFullscreen } from '@/composables/use-app-fullscreen'
+import { useStageFullscreen } from '@/composables/use-stage-fullscreen'
+import { isTouchOnlyDevice } from '@/media/device-capabilities'
 import type { RoomScreenShare } from '@/composables/use-room-screen-sharing'
 import { canUseMiniplayer } from '@/media/miniplayer-window'
 import { canCaptureScreen } from '@/media/screen-capture'
@@ -39,6 +41,8 @@ const activeRoomStore = useActiveRoomStore()
 const isMiniplayerAvailable = canUseMiniplayer()
 const screenShareStore = useScreenShareStore()
 const { isFullscreen: isAppFullscreen, toggle: toggleAppFullscreen } = useAppFullscreen()
+const { toggleFullscreen: toggleStageFullscreen } = useStageFullscreen()
+const isTouchDevice = isTouchOnlyDevice()
 
 const canShareFromThisDevice = canCaptureScreen()
 const isShareDialogOpen = ref(false)
@@ -91,7 +95,7 @@ function handleMuteEverythingButtonClick() {
 }
 
 function handleFullscreenButtonClick() {
-  void toggleAppFullscreen()
+  void (isTouchDevice ? toggleStageFullscreen() : toggleAppFullscreen())
 }
 
 function handleMiniplayerButtonClick() {
@@ -171,6 +175,7 @@ function handleExitRoomButtonClick() {
       variant="neutral"
       appearance="outlined"
       shape="circle"
+      :is-disabled="isTouchDevice && screenShares.length === 0"
       @click="handleFullscreenButtonClick"
     />
     <BaseIconButton

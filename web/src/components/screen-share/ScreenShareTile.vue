@@ -31,6 +31,7 @@ const emit = defineEmits<{
   focusRequested: []
   focusToggleRequested: []
   fullscreenToggleRequested: []
+  videoAspectRatioChanged: [aspectRatio: number]
 }>()
 
 const VIEW_QUALITY_DEBOUNCE_MILLISECONDS = 400
@@ -78,6 +79,7 @@ watchDebounced(
 
 function handleVideoAspectRatioChanged(aspectRatio: number) {
   videoAspectRatio.value = aspectRatio
+  emit('videoAspectRatioChanged', aspectRatio)
 }
 
 function handleThumbnailClick() {
@@ -181,7 +183,7 @@ function handleFullscreenToggleRequested() {
       </div>
     </FittedVideoFrame>
     <button
-      v-if="role === 'stage' && !isFullscreen"
+      v-if="role === 'stage' && (!isFullscreen || !canHover)"
       type="button"
       :aria-label="
         canHover

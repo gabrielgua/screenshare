@@ -162,6 +162,32 @@
   direction: rtl;
 }
 
+@utility window-filling-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  width: 100dvw;
+  height: 100dvh;
+}
+
+@utility window-filling-stage-rotated {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  width: 100dvw;
+  height: 100dvh;
+
+  @media (orientation: portrait) {
+    top: 50%;
+    left: 50%;
+    width: 100dvh;
+    height: 100dvw;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+}
+
 @utility stage-fit-area {
   container-type: size;
 }
